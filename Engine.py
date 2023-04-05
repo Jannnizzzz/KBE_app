@@ -8,14 +8,19 @@ class Engine(Base):
     prop_inclination = Input()
     velocity_op = Input()
     thrust_op = Input()
+    max_voltage = Input()
 
     @Attribute
-    def rpm_op(self):
-        return self.propeller.rpm_op
+    def speed_op(self):
+        return self.propeller.rpm_op/60
 
     @Attribute
     def torque_op(self):
         return self.propeller.torque_op
+
+    @Attribute
+    def current(self):
+        return self.motor.current
 
     @Part
     def propeller(self):
@@ -26,4 +31,6 @@ class Engine(Base):
 
     @Part
     def motor(self):
-        return Motor(torque_op=self.torque_op, rpm_op=self.rpm_op)
+        return Motor(torque_op=self.torque_op,
+                     speed_op=self.speed_op,
+                     max_voltage=self.max_voltage)

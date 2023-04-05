@@ -13,8 +13,8 @@ class Propeller(Base):
 
     @Attribute
     def rpm_op(self):
-        return 0
+        return 7000
 
     @Attribute
     def torque_op(self):
-        return 0
+        return .0166
