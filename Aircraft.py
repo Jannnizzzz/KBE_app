@@ -67,8 +67,7 @@ class Aircraft(Base):
     @Part
     def engines(self):
         return Engine(quantify=self.num_engines,
-                      prop_diameter=self.prop_diameter,
-                      prop_inclination=self.prop_inclination,
+                      prop=self.propeller,
                       velocity_op=self.velocity,
                       thrust_op=1,
                       max_voltage=self.battery.voltage)

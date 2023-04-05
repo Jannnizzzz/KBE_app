@@ -2,14 +2,17 @@
 from parapy.core import Base, Input, Attribute, Part
 
 class Propeller(Base):
-    diameter = Input()
-    inclination = Input()
+    propeller = Input()
     thrust_op = Input()
     velocity_op = Input()
 
     @Input
     def prop_characteristics(self):
-        return 0
+        with open('Prop_data/P' + self.propeller + '.dat') as file:
+            lines = []
+            for line in file.readlines():
+                lines.append(line.strip())
+        return lines
 
     @Attribute
     def rpm_op(self):

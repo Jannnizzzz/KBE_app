@@ -4,8 +4,7 @@ from Propeller import Propeller
 from Motor import Motor
 
 class Engine(Base):
-    prop_diameter = Input()
-    prop_inclination = Input()
+    prop = Input()
     velocity_op = Input()
     thrust_op = Input()
     max_voltage = Input()
@@ -24,8 +23,7 @@ class Engine(Base):
 
     @Part
     def propeller(self):
-        return Propeller(diameter=self.prop_diameter,
-                         inclination=self.prop_inclination,
+        return Propeller(propeller=self.prop,
                          velocity_op=self.velocity_op,
                          thrust_op=self.thrust_op)
 
