@@ -6,6 +6,7 @@ class Motor(Base):
     torque_op = Input()
     speed_op = Input()
     max_voltage = Input()
+    voltage_per_cell = Input()
     max_current = Input(20)
     resistance = Input(.025)
     kv = Input(180)
@@ -25,3 +26,7 @@ class Motor(Base):
     @Attribute
     def is_possible(self):
         return (self.current < self.max_current) and (self.voltage < self.max_voltage)
+
+    @Attribute
+    def battery_cells_required(self):
+        return np.ceil(self.voltage/self.voltage_per_cell)

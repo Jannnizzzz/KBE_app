@@ -4,6 +4,8 @@ from Wing import Wing
 from Battery import Battery
 from Engine import Engine
 
+import numpy as np
+
 class Aircraft(Base):
     endurance = Input()
     endurance_mode = Input()
@@ -27,7 +29,7 @@ class Aircraft(Base):
 
     @Attribute
     def total_weight(self):
-        return self.battery.weight
+        return 9.80665 * self.battery.weight
 
     @Attribute
     def endurance_time(self):
@@ -42,19 +44,28 @@ class Aircraft(Base):
 
     @Attribute
     def check_endurance(self):
-        if self.endurance_mode == 'R':
-            factor = self.endurance / self.endurance_range
-            if factor >= 1:
-                self.battery_capacity = factor * self.battery.capacity
-        elif self.endurance_mode == 'T':
-            factor = self.endurance / self.endurance_time
-            if factor >= 1:
-                self.battery_capacity = factor * self.battery.capacity
-        return True
+        current_endurance = self.endurance_time if self.endurance_mode == 'T' else self.endurance_range
+        self.battery_capacity = self.endurance / current_endurance * self.battery.capacity
+        return
+
+    @Attribute
+    def battery_cells_required(self):
+        cells = 0
+        for i in range(self.num_engines):
+            cells = np.max(self.engines[i].motor.battery_cells_required)
+        return cells
+
+    @Attribute
+    def aerodynamic_efficiency(self):
+        return .02
+    @Attribute
+    def thrust(self):
+        return self.aerodynamic_efficiency * self.total_weight
+
     @Part
     def battery(self):
         return Battery(cap=self.battery_capacity,
-                       cells=4)
+                       cells=self.battery_cells_required)
 
     @Part
     def wing(self):
@@ -69,8 +80,9 @@ class Aircraft(Base):
         return Engine(quantify=self.num_engines,
                       prop=self.propeller,
                       velocity_op=self.velocity,
-                      thrust_op=1,
-                      max_voltage=self.battery.voltage)
+                      thrust_op=self.thrust,
+                      max_voltage=self.battery.voltage,
+                      voltage_per_cell=self.battery.voltage_per_cell)
 
     #@Part
     #def payload(self):

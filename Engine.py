@@ -8,6 +8,7 @@ class Engine(Base):
     velocity_op = Input()
     thrust_op = Input()
     max_voltage = Input()
+    voltage_per_cell = Input()
 
     @Attribute
     def speed_op(self):
@@ -31,4 +32,5 @@ class Engine(Base):
     def motor(self):
         return Motor(torque_op=self.torque_op,
                      speed_op=self.speed_op,
-                     max_voltage=self.max_voltage)
+                     max_voltage=self.max_voltage,
+                     voltage_per_cell=self.voltage_per_cell)

@@ -5,9 +5,10 @@ import math
 
 class Battery(Base):
     cap = Input()                   # in Ah
-    capacity_per_cell = Input(2.6)  # in Ah
     cells = Input()
 
+    capacity_per_cell = Input(2.6)  # in Ah
+    voltage_per_cell = Input(4.2)   # in V
     cell_diameter = Input(19)       # in mm
     cell_height = Input(65)         # in mm
 
@@ -33,7 +34,7 @@ class Battery(Base):
 
     @Attribute
     def voltage(self):
-        return 4.2 * self.cells
+        return self.voltage_per_cell * self.cells
 
     @Attribute
     def weight(self):

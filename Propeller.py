@@ -8,11 +8,10 @@ class Propeller(Base):
 
     @Input
     def prop_characteristics(self):
-        with open('Prop_data/P' + self.propeller + '.dat') as file:
-            lines = []
-            for line in file.readlines():
-                lines.append(line.strip())
-        return lines
+        import matlab.engine
+        eng = matlab.engine.start_mtlab()
+        characteristics, rpm = eng.importPropData('P'+self.propeller+'.dat', nargout=(0, 1))
+        return characteristics, rpm
 
     @Attribute
     def rpm_op(self):
@@ -20,4 +19,4 @@ class Propeller(Base):
 
     @Attribute
     def torque_op(self):
-        return .0166
+        return .0166 * self.thrust_op
