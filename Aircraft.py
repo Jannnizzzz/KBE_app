@@ -13,6 +13,7 @@ class Aircraft(Base):
     propeller = Input()
     materials = Input()
     battery_capacity = Input(5)
+    battery_cells = Input(3)
     velocity = Input(100)
     num_engines = Input(1)
     max_dimensions = Input(3)
@@ -42,11 +43,12 @@ class Aircraft(Base):
     def endurance_range(self):
         return self.velocity*self.endurance_time
 
-    @Attribute
-    def check_endurance(self):
-        current_endurance = self.endurance_time if self.endurance_mode == 'T' else self.endurance_range
-        self.battery_capacity = self.endurance / current_endurance * self.battery.capacity
-        return
+    def iterate(self):
+        factor_cap = self.endurance/self.endurance_time if self.endurance_mode == 'T' else self.endurance/self.endurance_range
+        if abs(self.battery.capacity * (1 - factor_cap))/self.battery.capacity_per_cell > 1:
+            self.battery_capacity *= factor_cap
+
+        self.battery_cells = self.battery_cells_required
 
     @Attribute
     def battery_cells_required(self):
@@ -65,7 +67,7 @@ class Aircraft(Base):
     @Part
     def battery(self):
         return Battery(cap=self.battery_capacity,
-                       cells=self.battery_cells_required)
+                       cells=self.battery_cells)
 
     @Part
     def wing(self):
