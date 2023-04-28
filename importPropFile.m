@@ -101,4 +101,9 @@ for i = 1:N
         RPM(end+1) = raw{i,3};
     end
 end
+propData(:,:, end+1) = cell2mat(raw(start_idx:end,:));
 
+%% Convert uinits to SI
+propData(:,1,:) = propData(:,1,:) * 1.60934;    % mph to km/h
+propData(:,7,:) = propData(:,7,:) * 0.112985;   % in-lbf to Nm
+propData(:,8,:) = propData(:,8,:) * 4.44822;    % lbf to N

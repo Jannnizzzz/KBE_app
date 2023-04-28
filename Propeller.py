@@ -1,5 +1,9 @@
 
 from parapy.core import Base, Input, Attribute, Part
+import numpy as np
+
+from Aircraft import MATLAB_ENG
+import matlab.engine
 
 class Propeller(Base):
     propeller = Input()
@@ -8,15 +12,43 @@ class Propeller(Base):
 
     @Input
     def prop_characteristics(self):
-        import matlab.engine
-        eng = matlab.engine.start_mtlab()
-        characteristics, rpm = eng.importPropData('P'+self.propeller+'.dat', nargout=(0, 1))
+        characteristics, rpm = MATLAB_ENG.importPropFile('P'+self.propeller+'.dat', nargout=2)
+        characteristics = np.asarray(characteristics)
+        rpm = np.asarray(rpm).flatten()
         return characteristics, rpm
 
     @Attribute
+    def max_thrust(self):
+        characteristics, _ = self.prop_characteristics
+        return np.nanmax(characteristics[:, 7, :])
+
+    @Attribute
+    def max_velocity(self):
+        characteristics, _ = self.prop_characteristics
+        return np.nanmax(characteristics[:, 0, :])
+
+    @Attribute
+    def op_valid(self):
+        if self.velocity_op <= self.max_velocity and self.thrust_op <= self.max_thrust:
+            return True
+        else:
+            return False
+
+    @Attribute
+    def operation_point(self):
+        characteristics, rpm = self.prop_characteristics
+        diff_velocities = (characteristics[:, 0, :] - self.velocity_op) / self.max_velocity
+        diff_thrust = (characteristics[:, 7, :] - self.thrust_op) / self.max_thrust
+        difference = np.abs(diff_velocities) + np.abs(diff_thrust)
+        idx = np.unravel_index(np.nanargmin(difference), difference.shape)
+        return idx
+
+    @Attribute
     def rpm_op(self):
-        return 7000
+        _, rpm = self.prop_characteristics
+        return rpm[self.operation_point[1]]
 
     @Attribute
     def torque_op(self):
-        return .0166 * self.thrust_op
+        characteristics, _ = self.prop_characteristics
+        return characteristics[self.operation_point[0], 6, self.operation_point[1]]

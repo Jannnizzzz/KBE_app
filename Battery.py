@@ -38,7 +38,7 @@ class Battery(Base):
 
     @Attribute
     def weight(self):
-        return .044 * self.num_cells
+        return 9.80665 * .044 * self.num_cells
 
     @Part
     def geometry(self):
