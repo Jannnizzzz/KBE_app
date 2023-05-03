@@ -2,13 +2,15 @@
 from parapy.core import Base, Input, Attribute, Part
 import numpy as np
 
-from Aircraft import MATLAB_ENG
+
 import matlab.engine
+from __init__ import MATLAB_ENG
 
 class Propeller(Base):
     propeller = Input()
     thrust_op = Input()
     velocity_op = Input()
+
 
     @Input
     def prop_characteristics(self):

@@ -7,15 +7,14 @@ class Motor(Base):
     speed_op = Input()
     max_voltage = Input()
     voltage_per_cell = Input()
-    max_current = Input(20)
+    max_current = Input(40)
     resistance = Input(.025)
-    kv_init = Input(2200)             # in RPM/V
+    k_phi = Input(60/2200)
 
-    @Input
-    def k_phi(self):
-        #return 60/self.kv_init
-        return max(np.sqrt(2*np.pi * self.resistance * self.torque_op / self.speed_op),
-                   2 * np.pi / self.max_current * self.torque_op)
+    #@Input
+    #def k_phi(self):
+    #    return max(np.sqrt(2*np.pi * self.resistance * self.torque_op / self.speed_op),
+    #               2 * np.pi / self.max_current * self.torque_op)
 
     @Input
     def kV(self):
@@ -35,14 +34,29 @@ class Motor(Base):
 
     @Attribute
     def is_possible(self):
-        return (self.current < self.max_current) and (self.voltage < self.max_voltage)
+        return (self.current <= self.max_current) and (self.voltage <= self.max_voltage)
 
     @Attribute
-    def battery_cells_required(self):
+    def voltages(self):
         characteristics, rpm = self.parent.propeller.prop_characteristics
         torque = characteristics[:, 6, :]
         voltages = np.zeros_like(torque)
         for i in range(voltages.shape[1]):
-            voltages[:, i] = (rpm[i]/60 + 2 * np.pi * self.resistance / self.k_phi ** 2 * torque[:, i]) * self.k_phi
+            voltages[:, i] = rpm[i] / 60 * self.k_phi + 2 * np.pi * self.resistance / self.k_phi * torque[:, i]
+        return voltages
 
-        return np.ceil(np.nanmax(voltages) / self.voltage_per_cell)
+    @Attribute
+    def battery_cells_required(self):
+        return np.ceil(np.nanmax(self.voltages) / self.voltage_per_cell)
+
+    @Attribute
+    def gradient_max_voltage(self):
+        characteristics, rpm = self.parent.propeller.prop_characteristics
+        torque = characteristics[:, 6, :]
+        idx = np.unravel_index(np.nanargmax(self.voltages), self.voltages.shape)
+
+        return rpm[idx[1]]/60 - 2 * np.pi * self.resistance * torque[idx[0], idx[1]] / self.k_phi**2
+
+    @Attribute
+    def gradient_current(self):
+        return - 2 * np.pi * self.torque_op / self.k_phi**2
