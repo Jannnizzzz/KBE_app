@@ -9,6 +9,7 @@ class Engine(Base):
     thrust_op = Input()
     max_voltage = Input()
     voltage_per_cell = Input()
+    motor_data = Input()
 
     @Attribute
     def speed_op(self):
@@ -24,13 +25,9 @@ class Engine(Base):
 
     @Part
     def propeller(self):
-        return Propeller(propeller=self.prop,
-                         velocity_op=self.velocity_op,
-                         thrust_op=self.thrust_op)
+        return Propeller(pass_down="prop, velocity_op",
+                         thrust=self.thrust_op)
 
     @Part
     def motor(self):
-        return Motor(torque_op=self.torque_op,
-                     speed_op=self.speed_op,
-                     max_voltage=self.max_voltage,
-                     voltage_per_cell=self.voltage_per_cell)
+        return Motor(pass_down="torque_op, speed_op, voltage_per_cell, motor_data")

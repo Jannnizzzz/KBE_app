@@ -6,6 +6,7 @@ from Engine import Engine
 from Payload import Payload
 
 import numpy as np
+import pandas as pd
 
 
 
@@ -69,34 +70,35 @@ class Aircraft(Base):
         while any_changes:
             any_changes = False
 
-            max_voltage = [np.nanmax(self.engines[i].motor.voltages) for i in range(self.num_engines)]
-            bool_max_voltage = (max_voltage == np.nanmax(max_voltage))
+            # max_voltage = [np.nanmax(self.engines[i].motor.voltages) for i in range(self.num_engines)]
+            #             bool_max_voltage = (max_voltage == np.nanmax(max_voltage))
+            #
+            #             # W_bat ~= max_voltage/voltage_per_cell * current*time/capacity_per_cell
+            #             # d W_bat/d kPhi = time/voltage_per_cell/capacity_per_cell *
+            #             #                   (current * d max_voltage/d kPhi + max_voltage * d current/d kPhi)
+            #             gradient = np.zeros((self.num_engines,))
+            #             for i in range(self.num_engines):
+            #                 # current gradient
+            #                 dcurrent_dkphi = np.nanmax(max_voltage) * self.engines[i].motor.gradient_current
+            #                 gradient[i] = 0 if dcurrent_dkphi > 0 and self.engines[i].motor.current > self.engines[i].motor.max_current\
+            #                                 else dcurrent_dkphi
+            #
+            #                 # max voltage gradient
+            #                 if bool_max_voltage[i]:
+            #                     dvoltage_dkphi = self.total_current * self.engines[i].motor.gradient_max_voltage
+            #                     gradient[i] += 0 if dvoltage_dkphi > 0 and self.engines[i].motor.current > self.engines[i].motor.max_current\
+            #                                     else dvoltage_dkphi
+            #
+            #             #print(gradient)
+            #             if np.max(np.abs(gradient)) > 10 or np.any(gradient == 0):
+            #                 any_changes = True
+            #                 print(-gradient/500000000)
+            #                 for i in range(self.num_engines):
+            #                     if gradient[i] != 0:
+            #                         self.engines[i].motor.k_phi -= gradient[i] / 500000000
+            #                     else:
+            #                         self.engines[i].motor.k_phi = 2 * np.pi / self.engines[i].motor.max_current * self.engines[i].motor.torque_op
 
-            # W_bat ~= max_voltage/voltage_per_cell * current*time/capacity_per_cell
-            # d W_bat/d kPhi = time/voltage_per_cell/capacity_per_cell *
-            #                   (current * d max_voltage/d kPhi + max_voltage * d current/d kPhi)
-            gradient = np.zeros((self.num_engines,))
-            for i in range(self.num_engines):
-                # current gradient
-                dcurrent_dkphi = np.nanmax(max_voltage) * self.engines[i].motor.gradient_current
-                gradient[i] = 0 if dcurrent_dkphi > 0 and self.engines[i].motor.current > self.engines[i].motor.max_current\
-                                else dcurrent_dkphi
-
-                # max voltage gradient
-                if bool_max_voltage[i]:
-                    dvoltage_dkphi = self.total_current * self.engines[i].motor.gradient_max_voltage
-                    gradient[i] += 0 if dvoltage_dkphi > 0 and self.engines[i].motor.current > self.engines[i].motor.max_current\
-                                    else dvoltage_dkphi
-
-            #print(gradient)
-            if np.max(np.abs(gradient)) > 10 or np.any(gradient == 0):
-                any_changes = True
-                print(-gradient/500000000)
-                for i in range(self.num_engines):
-                    if gradient[i] != 0:
-                        self.engines[i].motor.k_phi -= gradient[i] / 500000000
-                    else:
-                        self.engines[i].motor.k_phi = 2 * np.pi / self.engines[i].motor.max_current * self.engines[i].motor.torque_op
 
             factor_cap = self.endurance/self.endurance_time if self.endurance_mode == 'T'\
                                                             else self.endurance/self.endurance_range
@@ -111,13 +113,6 @@ class Aircraft(Base):
                 self.battery_cells = self.battery_cells_required
 
             print(self.total_weight)
-            #mean_max_thrust = 0
-            #for i in range(self.num_engines):
-            #   mean_max_thrust += self.engines[i].propeller.max_thrust/self.num_engines
-            #num_engines = np.ceil(self.thrust / mean_max_thrust).astype(int)
-            #print(num_engines)
-            #if self.num_engines != num_engines and self.adjust_num_engines:
-            #    self.num_engines = num_engines
 
     @Attribute
     def battery_cells_required(self):
@@ -127,8 +122,10 @@ class Aircraft(Base):
         return cells
 
     @Attribute
-    def aerodynamic_efficiency(self):
-        return 1.0/10
+    def motor_data(self):
+        WS = pd.read_excel('Motor_data.xlsx')
+        return np.array(WS)
+
     @Attribute
     def thrust(self):
         # return self.aerodynamic_efficiency * self.total_weight
@@ -160,7 +157,8 @@ class Aircraft(Base):
                       velocity_op=self.velocity,
                       thrust_op=self.thrust/self.num_engines,
                       max_voltage=self.battery.voltage,
-                      voltage_per_cell=self.battery.voltage_per_cell)
+                      voltage_per_cell=self.battery.voltage_per_cell,
+                      motor_data=self.motor_data)
 
     @Part
     def payload(self):

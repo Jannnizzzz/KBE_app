@@ -7,26 +7,36 @@ class Motor(Base):
     speed_op = Input()
     max_voltage = Input()
     voltage_per_cell = Input()
-    max_current = Input(40)
-    resistance = Input(.025)
-    k_phi = Input(60/2200)
+    motor_data = Input()
+    motor_idx = Input(0)
 
-    #@Input
-    #def k_phi(self):
-    #    return max(np.sqrt(2*np.pi * self.resistance * self.torque_op / self.speed_op),
-    #               2 * np.pi / self.max_current * self.torque_op)
+    @Input
+    def k_phi(self):
+        return 60/self.kV
 
     @Input
     def kV(self):
-        return 60/self.k_phi
+        return self.motor_data[self.motor_idx, 1]
+
+    @Attribute
+    def weight(self):
+        return 9.80665 * self.motor_data[self.motor_idx, 7]
+
+    @Attribute
+    def max_voltage(self):
+        return self.motor_data[self.motor_idx, 6]
+
+    @Attribute
+    def max_current(self):
+        return self.motor_data[self.motor_idx, 5]
+
+    @Attribute
+    def resistance(self):
+        return self.motor_data[self.motor_idx, 2]
 
     @Attribute
     def voltage(self):
         return self.speed_op * self.k_phi + 2*np.pi * self.resistance / self.k_phi * self.torque_op
-
-    #@Attribute
-    #def efficiency(self):
-    #    return 1 - 2 * np.pi * self.resistance/self.voltage / self.k_phi * self.torque_op
 
     @Attribute
     def current(self):
