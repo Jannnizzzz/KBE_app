@@ -1,34 +1,66 @@
-from payload import *
+from parapy.geom import *
+from parapy.core import *
 
-class Fuselage(base):
-    fuselage_radius         = Input(max(Payload.dimensions_payload))        #maximum dimension of the payload, assuming a circular cross section
-    section_percentages     = Input(10, 30, 100, 100, 50 , 30 , 20 , 10)    #Section radius percentage
-    fuselage_length         = Input(max(Payload.dimensions_payload)*4)
+class Fuselage(GeomBase):
+#    fuselage_radius         = Input(max(Payload.dimensions_payload))        #maximum dimension of the payload, assuming a circular cross section
+#    section_percentages     = Input(10, 30, 100, 100, 50 , 30 , 20 , 10)    #Section radius percentage
+#    fuselage_length         = Input(max(Payload.dimensions_payload)*4)
 
 
-    n_sections              = 3                                             #Nose, payload section, rear section
+#    n_sections              = 3                                             #Nose, payload section, rear section
 
     @Attribute
     def payload_section_radius(self):
-        return[1.2*self.fuselage_radius]
+        return[1.1*sqrt(0.5*self.parent.payload.height^2+0.5*self.parent.payload.width^2)]
 
     @Attribute
-    def section_radius(self):
-        """section radius multiplied by the radius distribution
-        through the length. Note that the numbers are percentages.
-
-        :rtype: collections.Sequence[float]
-        """
-        return [i * self.fu_radius / 100. for i in self.fu_sections]
+    def battery_section_radius(self):
+        return[1.1*sqrt(0.5*self.parent.battery.height^2+0.5*self.parent.battery.width^2)]
 
     @Attribute
-    def section_length(self):
-        """section length is determined by dividing the fuselage
-        length by the number of fuselage sections.
+    def nose_radius(self):
+        return[0.2*battery_section_radius]
 
-        :rtype: float
-        """
-        return self.fuselage_length / (len(self.section_percentages) - 1)
+    @Attribute
+    def aft_fuselage_radius(self):
+        return[0.2*payload_section_radius]
+
+    @Attribute
+    def tail_radius(self):
+        return[0.1*payload_section_radius]
+
+    @Attribute
+    def nose_length(self):
+        return[0.2*self.parent.battery.length]
+
+    @Attribute
+    def aft_fuselage_length(self):
+        return[self.parent.battery.length+self.parent.payload.length*1.2]
+    @Input
+    def section_radii(self):
+       return[nose_radius, battery_section_radius, payload_section_radius, aft_fuselage_radius, tail_radius]
+
+    @Input
+    def section_lengths(self):
+        return[nose_length, self.parent.battery.length,self.parent.payload.length, aft_fuselage_length, tail_length]
+
+ #   @Attribute
+ #   def section_radius(self):
+ #       """section radius multiplied by the radius distribution
+  #      through the length. Note that the numbers are percentages.
+#
+ #       :rtype: collections.Sequence[float]
+ #       """
+ #       return [i * self.fu_radius / 100. for i in self.fu_sections]
+
+#    @Attribute
+#    def section_length(self):
+#        """section length is determined by dividing the fuselage
+ #       length by the number of fuselage sections.
+#
+ #       :rtype: float
+  #      """
+ #       return self.fuselage_length / (len(self.section_percentages) - 1)
 
     @Attribute
     def profiles(self):
@@ -41,13 +73,13 @@ class Fuselage(base):
     @Part
     def profile_set(self):
         return Circle(
-            quantify=len(self.section_percentages), color="Black",
-            radius=self.section_radius[child.index],
+            quantify=len(self.section_radii), color="Black",
+            radius=self.section_radii[child.index],
             # fuselage along the X axis, nose in XOY
             position=translate(
                 self.position.rotate90('y'),  # circles are in XY plane, thus need rotation
                 Vector(1, 0, 0),
-                child.index * self.section_length
+                child.index * self.section_lengths
             )
         )
 
@@ -90,5 +122,5 @@ class Fuselage(base):
 
 if __name__ == '__main__':
     from parapy.gui import display
-    obj = Fuselage(label="fuselage", mesh_deflection=0.0001)
+    obj = Fuselage(label="fuselage" )#, mesh_deflection=0.0001)
     display(obj)

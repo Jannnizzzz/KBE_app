@@ -1,16 +1,23 @@
-
-
-
-
+#from kbeutils.geom.curve import Naca5AirfoilCurve, Naca4AirfoilCurve
+from parapy.geom import *
+from parapy.core import *
+import os.path
 
 
 
 class Airfoil(FittedCurve):  # note the use of FittedCurve as superclass
-    chord = Input(1.)
-    airfoil_name = Input("whitcomb")
-    thickness_factor = Input(1.)
-    mesh_deflection = Input(0.0001)
+    airfoil_name = Input()                  # NACA airfoil generator
+    chord = Input()
+    thickness_factor = Input()
+    mesh_deflection = Input()
     tolerance = 0.0001
+
+#    @Part
+#    def airfoil(self):
+#        return DynamicType(type=(Naca5AirfoilCurve
+#                                 if len(self.airfoil_name) == 5
+#                                 else Naca4AirfoilCurve),
+#                           designation=self.airfoil_name)
 
     @Attribute
     def points(self):  # required input to the FittedCurve superclass
@@ -18,7 +25,7 @@ class Airfoil(FittedCurve):  # note the use of FittedCurve as superclass
             airfoil_file = self.airfoil_name
         else:
             airfoil_file = self.airfoil_name + '.dat'
-        file_path = os.path.join(AIRFOIL_DIR, airfoil_file)
+        file_path = os.path.join('Airfoil_data', airfoil_file)
         with open(file_path, 'r') as f:
             point_lst = []
             for line in f:
