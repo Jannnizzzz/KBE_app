@@ -13,7 +13,7 @@ class Aircraft(Base):
     battery_capacity = Input(5)
     velocity = Input(100)
     num_engines = Input(1)
-    max_dimensions = Input(3)
+    max_dimensions = Input(3)               #x,y,z
 
     @Input
     def prop_diameter(self):
