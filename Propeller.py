@@ -1,5 +1,8 @@
 
 from parapy.core import Base, Input, Attribute, Part
+from parapy.geom import Cylinder
+from parapy.geom.generic.positioning import Position, Point, Orientation
+from parapy.core.validate import IsInstance
 import numpy as np
 import os.path
 
@@ -13,12 +16,17 @@ class Propeller(Base):
     prop = Input()
     thrust = Input()
     velocity_op = Input()
+    position = Input(validator=IsInstance(Point))
 
+    @Input
+    def prop_diameter(self):
+        split = self.prop.index('x')
+        return int(self.prop[:split]) * 0.0254
 
     @Input
     def prop_characteristics(self):
         path = 'P'+self.prop+'.dat'
-        if os.path.exists('Prop_data/' +path):
+        if os.path.exists('Prop_data/' + path):
             characteristics, rpm = MATLAB_ENG.importPropFile(path, nargout=2)
             characteristics = np.asarray(characteristics)
             rpm = np.asarray(rpm).flatten()
@@ -69,3 +77,10 @@ class Propeller(Base):
     def thrust_op(self):
         characteristics, _ = self.prop_characteristics
         return characteristics[self.operation_point[0], 7, self.operation_point[1]]
+
+    @Part
+    def body(self):
+        return Cylinder(self.prop_diameter/2, .01,
+                        position=Position(self.position, Orientation(x='y', y='z')),
+                        transparency=0.8)
+    

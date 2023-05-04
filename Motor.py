@@ -2,6 +2,7 @@
 from parapy.core import Base, Input, Attribute, Part
 from parapy.geom import Cylinder
 from parapy.geom.generic.positioning import Position, Point, Orientation
+from parapy.core.validate import IsInstance
 import numpy as np
 
 class Motor(Base):
@@ -11,6 +12,7 @@ class Motor(Base):
     voltage_per_cell = Input()
     motor_data = Input()
     motor_idx = Input(0)
+    cog = Input(validator=IsInstance(Point))
 
     @Attribute
     def k_phi(self):
@@ -81,8 +83,15 @@ class Motor(Base):
     def gradient_current(self):
         return - 2 * np.pi * self.torque_op / self.k_phi**2
 
+    @Attribute
+    def diameter(self):
+        return self.motor_data[self.motor_idx, 4]/1000
+
+    @Attribute
+    def length(self):
+        return self.motor_data[self.motor_idx, 3]/1000
+
     @Part(parse=False)
     def body(self):
-        return Cylinder(self.motor_data[self.motor_idx, 4]/2000, self.motor_data[self.motor_idx, 3]/1000,
-                        position=Position(Point(0, 0, 0), Orientation(x='y', y='z')))
-    
+        return Cylinder(self.diameter/2, self.length,
+                        position=Position(self.cog, Orientation(x='y', y='z')))
