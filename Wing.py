@@ -4,6 +4,7 @@ from parapy.geom import *
 from parapy.core import *
 from Airfoil import *
 from math import *
+import matlab.engine
 
 
 class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
@@ -51,6 +52,44 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
     def lofted_solid(self):
         return LoftedSolid(profiles=self.profiles,
                            hidden=not (__name__ == '__main__'))
+
+    @Attribute
+    def run_q3d(self):
+        """Run Q3D (MATLAB) and get back all results and input"""
+
+        # change matlab root directory to Q3D, so it can find the function
+        MATLAB_Q3D_ENGINE.cd(r'..\Q3D')
+
+        return MATLAB_Q3D_ENGINE.run_q3d(
+            matlab.double([[0, 0, 0, self.w_c_root, self.twist],
+                           [self.w_semi_span*tan(self.sweep), self.w_semi_span, 0, self.w_c_tip, self.twist]
+                           ]),
+
+            # in MATLAB 2021, double values are defined as
+            # rectangular nested sequence
+            matlab.double([1]),
+
+            # define number of outputs if >1
+            nargout=2
+        )
+
+    @Attribute
+    def q3d_res(self) -> Dict:
+        """q3d results"""
+        return self.run_q3d[0]
+
+    @Attribute
+    def q3d_ac(self) -> Dict:
+        """q3d inputs"""
+        return self.run_q3d[1]
+
+    @Attribute
+    def wing_cl(self) -> float:
+        return self.q3d_res["CLwing"]
+
+    @Attribute
+    def wing_cd(self) -> float:
+        return self.q3d_res["CDwing"]
 
 
 if __name__ == '__main__':
