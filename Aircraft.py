@@ -20,7 +20,7 @@ class Aircraft(Base):
     battery_capacity = Input(5)
     battery_cells = Input(3)
     velocity = Input(100)
-    num_engines = Input(2)
+    num_engines = Input(5)
     motor_idx = Input(0)
     #adjust_num_engines = Input(False)
     max_dimensions = Input(3)
@@ -43,12 +43,15 @@ class Aircraft(Base):
     def is_valid(self):
         valid = True
         for i in range(self.num_engines):
-            valid = valid and self.engines[i].motor.is_possible and self.engines[i].propeller.op_valid
+            valid = valid and self.engines[i].motor.is_valid and self.engines[i].propeller.op_valid
         return valid
 
     @Attribute
     def total_weight(self):
-        return self.battery.weight + self.payload.weight
+        motor_weight = 0
+        for i in range(self.num_engines):
+            motor_weight += self.engines[i].motor.weight
+        return self.battery.weight + self.payload.weight + motor_weight
 
     @Attribute
     def total_current(self):
@@ -69,9 +72,25 @@ class Aircraft(Base):
     def iterate(self):
         any_changes = True
 
+        # initialize flag to prevent endless switching of motors due to no fitting one
+        last_motor_change_direction = np.zeros((self.num_engines,))
         while any_changes:
-            print(self.total_weight)
+            print(self.total_weight/9.80665)
             any_changes = False
+
+            # adjust motor selection
+            for i in range(self.num_engines):
+                motor = self.engines[i].motor
+                if not motor.voltage_valid and motor.current_valid and motor.motor_idx < self.motor_data.shape[0]-1\
+                        and not (last_motor_change_direction[i] < 0):
+                    any_changes = True
+                    last_motor_change_direction[i] = 1
+                    self.engines[i].motor.motor_idx += 1
+                if not motor.current_valid and motor.voltage_valid and motor.motor_idx > 0\
+                        and not (last_motor_change_direction[i] > 0):
+                    any_changes = True
+                    last_motor_change_direction[i] = -1
+                    self.engines[i].motor.motor_idx -= 1
 
             # calculate, if the capacity of the battery has to be changed
             factor_cap = self.endurance/self.endurance_time if self.endurance_mode == 'T'\
@@ -101,8 +120,10 @@ class Aircraft(Base):
 
     @Attribute
     def motor_data(self):
-        WS = pd.read_excel('Motor_data.xlsx')
-        return np.array(WS)
+        data = pd.read_excel('Motor_data.xlsx')
+        data = np.array(data)
+        data = data[data[:, 1].argsort()]
+        return data
 
     @Attribute
     def thrust(self):
@@ -149,10 +170,10 @@ class Aircraft(Base):
 
 
 if __name__ == '__main__':
-    obj = Aircraft(endurance=2,
+    obj = Aircraft(endurance=1,
                    endurance_mode='T',
                    wing_airfoil='NACA4206',
-                   propeller='10x3',
+                   propeller='9x4',
                    materials='wood')
 
     from parapy.gui import display

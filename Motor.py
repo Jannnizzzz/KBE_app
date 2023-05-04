@@ -45,8 +45,16 @@ class Motor(Base):
         return 2 * np.pi / self.k_phi * self.torque_op
 
     @Attribute
-    def is_possible(self):
-        return (self.current <= self.max_current) and (self.voltage <= self.parent.parent.battery.voltage)
+    def current_valid(self):
+        return self.current <= self.max_current
+
+    @Attribute
+    def voltage_valid(self):
+        return self.voltage <= self.parent.parent.battery.voltage
+
+    @Attribute
+    def is_valid(self):
+        return self.current_valid and self.voltage_valid
 
     @Attribute
     def voltages(self):
