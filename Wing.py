@@ -5,6 +5,11 @@ from parapy.core import *
 from Airfoil import *
 from math import *
 import matlab.engine
+#from Q3D import MATLAB_Q3D_ENGINE
+from kbeutils import *
+
+# initialise MATLAB engine
+MATLAB_Q3D_ENGINE = matlab.engine.start_matlab()
 
 
 class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
@@ -74,12 +79,12 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
         )
 
     @Attribute
-    def q3d_res(self) -> Dict:
+    def q3d_res(self) -> dict:
         """q3d results"""
         return self.run_q3d[0]
 
     @Attribute
-    def q3d_ac(self) -> Dict:
+    def q3d_ac(self) -> dict:
         """q3d inputs"""
         return self.run_q3d[1]
 
@@ -91,6 +96,8 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
     def wing_cd(self) -> float:
         return self.q3d_res["CDwing"]
 
+
+    print(wing_cl)
 
 if __name__ == '__main__':
     from parapy.gui import display

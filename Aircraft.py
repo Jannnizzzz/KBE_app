@@ -7,18 +7,26 @@ from Engine import Engine
 class Aircraft(Base):
     endurance = Input()
     endurance_mode = Input()
-    wing_airfoil = Input()
+    airfoil_root = Input()
+    airfoil_tip  = Input()
     propeller = Input()
     materials = Input()
     battery_capacity = Input(5)
     velocity = Input(100)
+    air_density = Input()
     num_engines = Input(1)
-    max_dimensions = Input(3)               #x,y,z
+
+    max_width = Input()
+    max_length = Input()
+    max_height = Input()
 
     payload_width   = Input(0.2)            #m
     payload_length  = Input(0.5)            #m
     payload_height  = Input(0.2)            #m
     payload_weight  = Input(2.0)            #Kg
+
+    structural_material = Input('')
+
 
     @Input
     def prop_diameter(self):

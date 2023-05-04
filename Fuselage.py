@@ -1,5 +1,6 @@
 from parapy.geom import *
 from parapy.core import *
+from math import *
 
 class Fuselage(GeomBase):
 #    fuselage_radius         = Input(max(Payload.dimensions_payload))        #maximum dimension of the payload, assuming a circular cross section
@@ -19,15 +20,15 @@ class Fuselage(GeomBase):
 
     @Attribute
     def nose_radius(self):
-        return[0.2*battery_section_radius]
+        return[0.2 * self.battery_section_radius]
 
     @Attribute
     def aft_fuselage_radius(self):
-        return[0.2*payload_section_radius]
+        return[0.2 * self.payload_section_radius]
 
     @Attribute
     def tail_radius(self):
-        return[0.1*payload_section_radius]
+        return[0.1 * self.payload_section_radius]
 
     @Attribute
     def nose_length(self):
@@ -36,13 +37,18 @@ class Fuselage(GeomBase):
     @Attribute
     def aft_fuselage_length(self):
         return[self.parent.battery.length+self.parent.payload.length*1.2]
+
+    @Attribute
+    def tail_length(self):
+        return[0.2*self.aft_fuselage_length]
     @Input
     def section_radii(self):
-       return[nose_radius, battery_section_radius, payload_section_radius, aft_fuselage_radius, tail_radius]
+       return[self.nose_radius, self.battery_section_radius, self.payload_section_radius, self.aft_fuselage_radius,
+              self.tail_radius]
 
     @Input
     def section_lengths(self):
-        return[nose_length, self.parent.battery.length,self.parent.payload.length, aft_fuselage_length, tail_length]
+        return[self.nose_length, self.parent.battery.length, self.parent.payload.length, self.aft_fuselage_length, tail_length]
 
  #   @Attribute
  #   def section_radius(self):

@@ -7,6 +7,7 @@ class Payload(GeomBase):
     width   = Input()       #m
     length  = Input()       #m
     height  = Input()       #m
+
     weight  = Input()       #kg
 
     @Attribute

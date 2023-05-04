@@ -1,4 +1,4 @@
-#from kbeutils.geom.curve import Naca5AirfoilCurve, Naca4AirfoilCurve
+from kbeutils.geom.curve import Naca5AirfoilCurve, Naca4AirfoilCurve
 from parapy.geom import *
 from parapy.core import *
 import os.path
