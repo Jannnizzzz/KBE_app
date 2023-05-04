@@ -1,12 +1,18 @@
+from parapy.geom import *
+from parapy.core import *
 
 
 
-
-class Payload(base):
+class Payload(GeomBase):
     width   = Input()       #m
     length  = Input()       #m
     height  = Input()       #m
-
     weight  = Input()       #kg
 
-    dimensions_payload = [width, length, height]
+    @Attribute
+    def dimensions_payload(self):
+        return[self.width, self.length, self.height]
+
+    @Attribute
+    def cog_payload(self):
+        return[self.parent.payload.cog]

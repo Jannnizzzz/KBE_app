@@ -15,6 +15,11 @@ class Aircraft(Base):
     num_engines = Input(1)
     max_dimensions = Input(3)               #x,y,z
 
+    payload_width   = Input(0.2)            #m
+    payload_length  = Input(0.5)            #m
+    payload_height  = Input(0.2)            #m
+    payload_weight  = Input(2.0)            #Kg
+
     @Input
     def prop_diameter(self):
         split = self.propeller.index('x')
@@ -72,9 +77,13 @@ class Aircraft(Base):
                       thrust_op=1,
                       max_voltage=self.battery.voltage)
 
-    #@Part
-    #def payload(self):
-    #    return Payload()
+    @Part
+    def payload(self):
+        return Payload(width = self.payload_width,
+                       length = self.payload_length,
+                       height = self.payload_height,
+                       weight = self.payload.weight
+        )
 
     #@Part
     #def fuselage(self):
