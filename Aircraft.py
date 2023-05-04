@@ -21,7 +21,6 @@ class Aircraft(Base):
     battery_cells = Input(3)
     velocity = Input(100)
     num_engines = Input(5)
-    motor_idx = Input(0)
     #adjust_num_engines = Input(False)
     max_dimensions = Input(3)
 
@@ -157,8 +156,7 @@ class Aircraft(Base):
                       thrust_op=self.thrust/self.num_engines,
                       max_voltage=self.battery.voltage,
                       voltage_per_cell=self.battery.voltage_per_cell,
-                      motor_data=self.motor_data,
-                      motor_idx=self.motor_idx)
+                      motor_data=self.motor_data)
 
     @Part
     def payload(self):
