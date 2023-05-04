@@ -82,6 +82,7 @@ class Motor(Base):
         return - 2 * np.pi * self.torque_op / self.k_phi**2
 
     @Part(parse=False)
-    def rotated_body(self):
+    def body(self):
         return Cylinder(self.motor_data[self.motor_idx, 4]/2000, self.motor_data[self.motor_idx, 3]/1000,
                         position=Position(Point(0, 0, 0), Orientation(x='y', y='z')))
+    

@@ -1,5 +1,6 @@
 
 from parapy.core import Base, Input, Attribute, Part
+from parapy.core.validate import IsInstance
 from parapy.geom import Box
 from parapy.geom.generic.positioning import Position, Point, Orientation
 import math
@@ -12,18 +13,19 @@ class Battery(Base):
     voltage_per_cell = Input(4.2)   # in V
     cell_diameter = Input(19)       # in mm
     cell_height = Input(65)         # in mm
+    cog = Input(Point(0, 0, 0), validator=IsInstance(Point))
 
     @Attribute
     def width(self):
-        return self.cell_diameter * self.cells
+        return self.cell_diameter * self.cells / 1000
 
     @Attribute
     def length(self):
-        return self.cell_diameter * self.num_cells/self.cells
+        return self.cell_diameter * self.num_cells/self.cells / 1000
 
     @Attribute
     def height(self):
-        return self.cell_height
+        return self.cell_height / 1000
 
     @Attribute
     def num_cells(self):
@@ -42,6 +44,7 @@ class Battery(Base):
         return 9.80665 * .044 * self.num_cells
 
     @Part
-    def geometry(self):
-        return Box(self.length/1000, self.width/1000, self.height/1000,
-                   position=Position(Point(0, 0, 0), Orientation(x='-x', y='y')))
+    def body(self):
+        return Box(self.length, self.width, self.height,
+                   centered=True,
+                   position=Position(self.cog, Orientation(x='-x', y='y')))
