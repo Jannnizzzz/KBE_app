@@ -1,11 +1,13 @@
 
 from parapy.core import Base, Input, Attribute, Part
 import numpy as np
+import os.path
 
 
 
 import matlab.engine
 from __init__ import MATLAB_ENG
+from __init__ import generate_warning
 
 class Propeller(Base):
     prop = Input()
@@ -15,10 +17,15 @@ class Propeller(Base):
 
     @Input
     def prop_characteristics(self):
-        characteristics, rpm = MATLAB_ENG.importPropFile('P'+self.prop+'.dat', nargout=2)
-        characteristics = np.asarray(characteristics)
-        rpm = np.asarray(rpm).flatten()
-        return characteristics, rpm
+        path = 'P'+self.prop+'.dat'
+        if os.path.exists('Prop_data/' +path):
+            characteristics, rpm = MATLAB_ENG.importPropFile(path, nargout=2)
+            characteristics = np.asarray(characteristics)
+            rpm = np.asarray(rpm).flatten()
+            return characteristics, rpm
+        else:
+            generate_warning("Propeller not found", "The propeller you chose was not found in the data base.")
+            return None
 
     @Attribute
     def max_thrust(self):

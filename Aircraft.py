@@ -4,6 +4,7 @@ from Wing import Wing
 from Battery import Battery
 from Engine import Engine
 from Payload import Payload
+from __init__ import generate_warning
 
 import numpy as np
 import pandas as pd
@@ -20,6 +21,7 @@ class Aircraft(Base):
     battery_cells = Input(3)
     velocity = Input(100)
     num_engines = Input(2)
+    motor_idx = Input(0)
     #adjust_num_engines = Input(False)
     max_dimensions = Input(3)
 
@@ -68,57 +70,33 @@ class Aircraft(Base):
         any_changes = True
 
         while any_changes:
+            print(self.total_weight)
             any_changes = False
 
-            # max_voltage = [np.nanmax(self.engines[i].motor.voltages) for i in range(self.num_engines)]
-            #             bool_max_voltage = (max_voltage == np.nanmax(max_voltage))
-            #
-            #             # W_bat ~= max_voltage/voltage_per_cell * current*time/capacity_per_cell
-            #             # d W_bat/d kPhi = time/voltage_per_cell/capacity_per_cell *
-            #             #                   (current * d max_voltage/d kPhi + max_voltage * d current/d kPhi)
-            #             gradient = np.zeros((self.num_engines,))
-            #             for i in range(self.num_engines):
-            #                 # current gradient
-            #                 dcurrent_dkphi = np.nanmax(max_voltage) * self.engines[i].motor.gradient_current
-            #                 gradient[i] = 0 if dcurrent_dkphi > 0 and self.engines[i].motor.current > self.engines[i].motor.max_current\
-            #                                 else dcurrent_dkphi
-            #
-            #                 # max voltage gradient
-            #                 if bool_max_voltage[i]:
-            #                     dvoltage_dkphi = self.total_current * self.engines[i].motor.gradient_max_voltage
-            #                     gradient[i] += 0 if dvoltage_dkphi > 0 and self.engines[i].motor.current > self.engines[i].motor.max_current\
-            #                                     else dvoltage_dkphi
-            #
-            #             #print(gradient)
-            #             if np.max(np.abs(gradient)) > 10 or np.any(gradient == 0):
-            #                 any_changes = True
-            #                 print(-gradient/500000000)
-            #                 for i in range(self.num_engines):
-            #                     if gradient[i] != 0:
-            #                         self.engines[i].motor.k_phi -= gradient[i] / 500000000
-            #                     else:
-            #                         self.engines[i].motor.k_phi = 2 * np.pi / self.engines[i].motor.max_current * self.engines[i].motor.torque_op
-
-
+            # calculate, if the capacity of the battery has to be changed
             factor_cap = self.endurance/self.endurance_time if self.endurance_mode == 'T'\
                                                             else self.endurance/self.endurance_range
-
             num_add_cells = np.ceil(self.battery.capacity * (factor_cap - 1)/self.battery.capacity_per_cell)
             if num_add_cells != 0:
+                print("Change capacity")
                 any_changes = True
                 self.battery_capacity += num_add_cells * self.battery.capacity_per_cell
 
+            # calculate, if the voltage of the battery has to be increased
             if self.battery_cells != self.battery_cells_required:
+                print("Change voltage")
                 any_changes = True
                 self.battery_cells = self.battery_cells_required
 
-            print(self.total_weight)
+        if not self.is_valid:
+            msg = "The iteration result found is not valid."
+            generate_warning("Iteration result invalid", msg)
 
     @Attribute
     def battery_cells_required(self):
-        cells = 0
+        cells = np.NaN
         for i in range(self.num_engines):
-            cells = np.max([cells, self.engines[i].motor.battery_cells_required])
+            cells = np.nanmin([cells, self.engines[i].motor.battery_cells_required])
         return cells
 
     @Attribute
@@ -158,7 +136,8 @@ class Aircraft(Base):
                       thrust_op=self.thrust/self.num_engines,
                       max_voltage=self.battery.voltage,
                       voltage_per_cell=self.battery.voltage_per_cell,
-                      motor_data=self.motor_data)
+                      motor_data=self.motor_data,
+                      motor_idx=self.motor_idx)
 
     @Part
     def payload(self):

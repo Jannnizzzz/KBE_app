@@ -10,6 +10,7 @@ class Engine(Base):
     max_voltage = Input()
     voltage_per_cell = Input()
     motor_data = Input()
+    motor_idx = Input()
 
     @Attribute
     def speed_op(self):
@@ -30,4 +31,4 @@ class Engine(Base):
 
     @Part
     def motor(self):
-        return Motor(pass_down="torque_op, speed_op, voltage_per_cell, motor_data")
+        return Motor(pass_down="torque_op, speed_op, voltage_per_cell, motor_data, motor_idx")

@@ -1,6 +1,7 @@
 
 from parapy.core import Base, Input, Attribute, Part
 from parapy.geom import Box
+from parapy.geom.generic.positioning import Position, Point, Orientation
 import math
 
 class Battery(Base):
@@ -42,4 +43,5 @@ class Battery(Base):
 
     @Part
     def geometry(self):
-        return Box(self.width, self.length, self.height)
+        return Box(self.length/1000, self.width/1000, self.height/1000,
+                   position=Position(Point(0, 0, 0), Orientation(x='-x', y='y')))

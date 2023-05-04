@@ -1,5 +1,7 @@
 
 from parapy.core import Base, Input, Attribute, Part
+from parapy.geom import Cylinder
+from parapy.geom.generic.positioning import Position, Point, Orientation
 import numpy as np
 
 class Motor(Base):
@@ -10,17 +12,17 @@ class Motor(Base):
     motor_data = Input()
     motor_idx = Input(0)
 
-    @Input
+    @Attribute
     def k_phi(self):
         return 60/self.kV
 
-    @Input
+    @Attribute
     def kV(self):
         return self.motor_data[self.motor_idx, 1]
 
     @Attribute
     def weight(self):
-        return 9.80665 * self.motor_data[self.motor_idx, 7]
+        return 9.80665 * self.motor_data[self.motor_idx, 7]/1000
 
     @Attribute
     def max_voltage(self):
@@ -44,7 +46,7 @@ class Motor(Base):
 
     @Attribute
     def is_possible(self):
-        return (self.current <= self.max_current) and (self.voltage <= self.max_voltage)
+        return (self.current <= self.max_current) and (self.voltage <= self.parent.parent.battery.voltage)
 
     @Attribute
     def voltages(self):
@@ -57,7 +59,7 @@ class Motor(Base):
 
     @Attribute
     def battery_cells_required(self):
-        return np.ceil(np.nanmax(self.voltages) / self.voltage_per_cell)
+        return np.ceil(self.max_voltage / self.voltage_per_cell)
 
     @Attribute
     def gradient_max_voltage(self):
@@ -70,3 +72,8 @@ class Motor(Base):
     @Attribute
     def gradient_current(self):
         return - 2 * np.pi * self.torque_op / self.k_phi**2
+
+    @Part(parse=False)
+    def rotated_body(self):
+        return Cylinder(self.motor_data[self.motor_idx, 4]/2000, self.motor_data[self.motor_idx, 3]/1000,
+                        position=Position(Point(0, 0, 0), Orientation(x='y', y='z')))
