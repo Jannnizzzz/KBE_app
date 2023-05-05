@@ -94,4 +94,5 @@ class Motor(Base):
     @Part(parse=False)
     def body(self):
         return Cylinder(self.diameter/2, self.length,
+                        centered=True,
                         position=Position(self.cog, Orientation(x='y', y='z')))

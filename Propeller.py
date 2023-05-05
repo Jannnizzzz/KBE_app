@@ -83,4 +83,3 @@ class Propeller(Base):
         return Cylinder(self.prop_diameter/2, .01,
                         position=Position(self.position, Orientation(x='y', y='z')),
                         transparency=0.8)
-    

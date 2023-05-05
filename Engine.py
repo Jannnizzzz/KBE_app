@@ -12,7 +12,17 @@ class Engine(Base):
     max_voltage = Input()
     voltage_per_cell = Input()
     motor_data = Input()
-    cog = Input(Point(0, 0, 0), validator=IsInstance(Point))
+    pos_x = Input()
+    pos_y = Input()
+    pos_z = Input()
+
+    @Input
+    def cog(self):
+        return Point(self.pos_x+self.motor.length/2, self.pos_y, self.pos_z)
+
+    @Attribute
+    def weight(self):
+        return self.motor.weight
 
     @Attribute
     def speed_op(self):
@@ -30,7 +40,7 @@ class Engine(Base):
     def propeller(self):
         return Propeller(pass_down="prop, velocity_op",
                          thrust=self.thrust_op,
-                         position=self.cog+Vector(self.motor.length, 0, 0))
+                         position=self.cog+Vector(self.motor.length/2, 0, 0))
 
     @Part
     def motor(self):

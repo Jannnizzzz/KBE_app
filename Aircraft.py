@@ -1,5 +1,6 @@
 
-from parapy.core import Base, Input, Attribute, Part, action
+from parapy.core import *
+from parapy.geom.generic.positioning import Point
 from Wing import Wing
 from Battery import Battery
 from Engine import Engine
@@ -31,7 +32,7 @@ class Aircraft(Base):
     @Input
     def prop_diameter(self):
         split = self.propeller.index('x')
-        return int(self.propeller[:split])
+        return int(self.propeller[:split]) * 0.0254
 
     @Input
     def prop_inclination(self):
@@ -49,8 +50,30 @@ class Aircraft(Base):
     def total_weight(self):
         motor_weight = 0
         for i in range(self.num_engines):
-            motor_weight += self.engines[i].motor.weight
+            motor_weight += self.engines[i].weight
         return self.battery.weight + self.payload.weight + motor_weight
+
+    @Attribute
+    def cog(self):
+        cog_x, cog_y, cog_z = 0, 0, 0
+
+        cog_x += self.battery.cog.x * self.battery.weight
+        cog_y += self.battery.cog.y * self.battery.weight
+        cog_z += self.battery.cog.z * self.battery.weight
+
+        cog_x += self.payload.cog.x * self.payload.weight
+        cog_y += self.payload.cog.y * self.payload.weight
+        cog_z += self.payload.cog.z * self.payload.weight
+
+        for i in range(self.num_engines):
+            cog_x += self.engines[i].cog.x * self.engines[i].weight
+            cog_y += self.engines[i].cog.y * self.engines[i].weight
+            cog_z += self.engines[i].cog.z * self.engines[i].weight
+
+        cog_x /= self.total_weight
+        cog_y /= self.total_weight
+        cog_z /= self.total_weight
+        return Point(cog_x, cog_y, cog_z)
 
     @Attribute
     def total_current(self):
@@ -156,11 +179,20 @@ class Aircraft(Base):
                       thrust_op=self.thrust/self.num_engines,
                       max_voltage=self.battery.voltage,
                       voltage_per_cell=self.battery.voltage_per_cell,
-                      motor_data=self.motor_data)
+                      motor_data=self.motor_data,
+                      pos_x=0,
+                      pos_y=-(self.num_engines-1)*3/4*self.prop_diameter + child.index * 3/2*self.prop_diameter,
+                      pos_z=0 if child.index != (self.num_engines-1)/2 else self.prop_diameter*3/4)
 
     @Part
     def payload(self):
-        return Payload(weight=9.80665*2)
+        return Payload(length=0.1,
+                       width=0.1,
+                       height=0.1,
+                       weight=9.80665*2,
+                       cog_x=self.battery.cog.x-self.battery.length/2-0.06,
+                       cog_y=0,
+                       cog_z=0)
 
     #@Part
     #def fuselage(self):
