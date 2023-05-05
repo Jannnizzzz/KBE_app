@@ -1,7 +1,7 @@
 
 from parapy.core import *
 from parapy.geom.generic.positioning import Point
-from Wing import Wing
+from Semiwing import Wing
 from Battery import Battery
 from Engine import Engine
 from Payload import Payload
@@ -14,7 +14,8 @@ import pandas as pd
 class Aircraft(Base):
     endurance = Input()
     endurance_mode = Input()
-    wing_airfoil = Input()
+    airfoil_root = Input()
+    airfoil_tip  = Input()
     propeller = Input()
     materials = Input()
     battery_capacity = Input(1)
@@ -22,6 +23,23 @@ class Aircraft(Base):
     velocity = Input(100)
     num_engines = Input(5)
     max_dimensions = Input(3)
+
+    air_density = Input(1.225)
+    num_engines = Input(1)
+
+    max_width = Input()
+    max_length = Input()
+    max_height = Input()
+
+    payload_width   = Input(0.2)            #m
+    payload_length  = Input(0.5)            #m
+    payload_height  = Input(0.2)            #m
+    payload_weight  = Input(2.0)            #Kg
+
+    structural_material = Input('')
+
+    tail_cl     = 0.0     #as it should be symmetric
+
 
     @Attribute
     def time_requirement(self):
@@ -156,8 +174,16 @@ class Aircraft(Base):
                        cells=self.battery_cells)
 
     @Part
+    def payload(self):
+        return Payload(width = self.payload_width,
+                       length = self.payload_length,
+                       height = self.payload_height,
+                       weight = self.payload.weight
+        )
+
+    @Part
     def wing(self):
-        return Wing()
+        return Semiwing()
 
     #@Part
     #def tail(self):
