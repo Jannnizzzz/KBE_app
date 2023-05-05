@@ -13,7 +13,7 @@ class Aircraft(Base):
     materials = Input()
     battery_capacity = Input(5)
     velocity = Input(100)
-    air_density = Input()
+    air_density = Input(1.225)
     num_engines = Input(1)
 
     max_width = Input()
@@ -26,6 +26,8 @@ class Aircraft(Base):
     payload_weight  = Input(2.0)            #Kg
 
     structural_material = Input('')
+
+    tail_cl     = 0.0     #as it should be symmetric
 
 
     @Input
@@ -40,7 +42,7 @@ class Aircraft(Base):
 
     @Attribute
     def total_weight(self):
-        return self.battery.weight
+        return self.battery.weight + self.payload_weight
 
     @Attribute
     def endurance_time(self):
@@ -70,6 +72,14 @@ class Aircraft(Base):
                        cells=4)
 
     @Part
+    def payload(self):
+        return Payload(width = self.payload_width,
+                       length = self.payload_length,
+                       height = self.payload_height,
+                       weight = self.payload.weight
+        )
+
+    @Part
     def wing(self):
         return Wing()
 
@@ -85,13 +95,6 @@ class Aircraft(Base):
                       thrust_op=1,
                       max_voltage=self.battery.voltage)
 
-    @Part
-    def payload(self):
-        return Payload(width = self.payload_width,
-                       length = self.payload_length,
-                       height = self.payload_height,
-                       weight = self.payload.weight
-        )
 
     #@Part
     #def fuselage(self):

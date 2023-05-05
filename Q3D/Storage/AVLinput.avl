@@ -24,7 +24,7 @@ YDUPLICATE
 INDEX
 1
 ANGLE
-1
+3
 # ----------------------------------------------------------
 SECTION
 # Xle Yle Zle Chord Ainc
@@ -36,7 +36,7 @@ CLAF
 # ----------------------------------------------------------
 SECTION
 # Xle Yle Zle Chord Ainc
--33.8052 10 0 1 2
+0.874887 10 0 1 2
 AFILE
 AFsection2.dat
 CLAF

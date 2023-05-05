@@ -16,4 +16,4 @@ class Payload(GeomBase):
 
     @Attribute
     def cog_payload(self):
-        return[self.parent.payload.cog]
+        return[self.cog]
