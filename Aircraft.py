@@ -1,11 +1,12 @@
 
 from parapy.core import *
 from parapy.geom.generic.positioning import Point
-from Semiwing import Wing
+from Wing import Semiwing
 from Battery import Battery
 from Engine import Engine
 from Payload import Payload
 from __init__ import generate_warning
+from Fuselage import Fuselage
 
 import numpy as np
 import pandas as pd
@@ -23,6 +24,8 @@ class Aircraft(Base):
     velocity = Input(100)
     num_engines = Input(5)
     max_dimensions = Input(3)
+
+    wing_surface_area   = 1 #dummy value
 
     air_density = Input(1.225)
     num_engines = Input(1)
@@ -68,6 +71,11 @@ class Aircraft(Base):
         for i in range(self.num_engines):
             motor_weight += self.engines[i].weight
         return self.battery.weight + self.payload.weight + motor_weight
+
+    @Attribute
+    def cl_required(self):
+        return self.total_weight/(self.wing_surface_area*0.5*self.air_density*self.velocity**2)
+
 
     @Attribute
     def cog(self):
@@ -117,6 +125,14 @@ class Aircraft(Base):
             print("Total weight", self.total_weight/9.80665)
             print("Capacity", self.battery.capacity)
             any_changes = False
+
+            # calculate, if the surface area of the wing has to be changed
+
+            required_extra_area = self.total_weight-(self.wing_surface_area*self.air_density*self.cl_required*0.5*self.velocity**2)/(self.air_density*self.cl_required*0.5*self.velocity**2)
+            if abs(required_extra_area) >= 0.1:
+                print("Change surface area")
+                any_changes = True
+                self.wing_surface_area += required_extra_area
 
             # adjust motor selection
             for i in range(self.num_engines):
@@ -185,6 +201,10 @@ class Aircraft(Base):
     def wing(self):
         return Semiwing()
 
+    @Part
+    def fuselage(self):
+        return Fuselage()
+
     #@Part
     #def tail(self):
     #    return Tail()
@@ -220,7 +240,6 @@ class Aircraft(Base):
 if __name__ == '__main__':
     obj = Aircraft(endurance=1,
                    endurance_mode='T',
-                   wing_airfoil='NACA4206',
                    propeller='9x4',
                    num_engines=5,
                    materials='wood')

@@ -12,35 +12,35 @@ class Fuselage(GeomBase):
 
     @Attribute
     def payload_section_radius(self):
-        return[1.1*sqrt(0.5*self.parent.payload.height^2+0.5*self.parent.payload.width^2)]
+        return(1.1*sqrt(0.5*self.parent.payload.height**2+0.5*self.parent.payload.width**2))
 
     @Attribute
     def battery_section_radius(self):
-        return[1.1*sqrt(0.5*self.parent.battery.height^2+0.5*self.parent.battery.width^2)]
+        return(1.1*sqrt(0.5*self.parent.battery.height**2+0.5*self.parent.battery.width**2))
 
     @Attribute
     def nose_radius(self):
-        return[0.2 * self.battery_section_radius]
+        return(0.2 * self.battery_section_radius)
 
     @Attribute
     def aft_fuselage_radius(self):
-        return[0.2 * self.payload_section_radius]
+        return(self.payload_section_radius)
 
     @Attribute
     def tail_radius(self):
-        return[0.1 * self.payload_section_radius]
+        return(0.2*self.payload_section_radius)
 
     @Attribute
     def nose_length(self):
-        return[0.2*self.parent.battery.length]
+        return(0.2*self.parent.battery.length)
 
     @Attribute
     def aft_fuselage_length(self):
-        return[self.parent.battery.length+self.parent.payload.length*1.2]
+        return(self.parent.battery.length+self.parent.payload.length*1.2)
 
     @Attribute
     def tail_length(self):
-        return[0.2*self.aft_fuselage_length]
+        return(0.2*self.aft_fuselage_length)
     @Input
     def section_radii(self):
        return[self.nose_radius, self.battery_section_radius, self.payload_section_radius, self.aft_fuselage_radius,
@@ -48,7 +48,7 @@ class Fuselage(GeomBase):
 
     @Input
     def section_lengths(self):
-        return[self.nose_length, self.parent.battery.length, self.parent.payload.length, self.aft_fuselage_length, tail_length]
+        return[self.nose_length, self.parent.battery.length, self.parent.payload.length, self.aft_fuselage_length, self.tail_length]
 
  #   @Attribute
  #   def section_radius(self):
@@ -85,7 +85,8 @@ class Fuselage(GeomBase):
             position=translate(
                 self.position.rotate90('y'),  # circles are in XY plane, thus need rotation
                 Vector(1, 0, 0),
-                child.index * self.section_lengths
+                #child.index * self.section_lengths
+                sum(self.section_lengths[:child.index])
             )
         )
 
