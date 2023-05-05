@@ -11,18 +11,16 @@ import numpy as np
 import pandas as pd
 
 
-
 class Aircraft(Base):
     endurance = Input()
     endurance_mode = Input()
     wing_airfoil = Input()
     propeller = Input()
     materials = Input()
-    battery_capacity = Input(5)
+    battery_capacity = Input(1)
     battery_cells = Input(3)
     velocity = Input(100)
     num_engines = Input(5)
-    #adjust_num_engines = Input(False)
     max_dimensions = Input(3)
 
     @Attribute
@@ -95,24 +93,18 @@ class Aircraft(Base):
         any_changes = True
 
         # initialize flag to prevent endless switching of motors due to no fitting one
-        last_motor_change_direction = np.zeros((self.num_engines,))
+        # last_motor_change_direction = np.zeros((self.num_engines,))
         while any_changes:
-            print(self.total_weight/9.80665)
+            print("=================================")
+            print("Total weight", self.total_weight/9.80665)
+            print("Capacity", self.battery.capacity)
             any_changes = False
 
             # adjust motor selection
             for i in range(self.num_engines):
-                motor = self.engines[i].motor
-                if not motor.voltage_valid and motor.current_valid and motor.motor_idx < self.motor_data.shape[0]-1\
-                        and not (last_motor_change_direction[i] < 0):
-                    any_changes = True
-                    last_motor_change_direction[i] = 1
-                    self.engines[i].motor.motor_idx += 1
-                if not motor.current_valid and motor.voltage_valid and motor.motor_idx > 0\
-                        and not (last_motor_change_direction[i] > 0):
-                    any_changes = True
-                    last_motor_change_direction[i] = -1
-                    self.engines[i].motor.motor_idx -= 1
+                if self.engines[i].iterate:
+                    print("Change motor")
+                any_changes = any_changes or self.engines[i].iterate
 
             # calculate, if the capacity of the battery has to be changed
             factor_cap = self.endurance/self.endurance_time if self.endurance_mode == 'T'\
@@ -138,7 +130,7 @@ class Aircraft(Base):
         cells = np.NaN
         for i in range(self.num_engines):
             cells = np.nanmin([cells, self.engines[i].motor.battery_cells_required])
-        return cells
+        return cells.astype(int)
 
     @Attribute
     def motor_data(self):
@@ -204,8 +196,10 @@ if __name__ == '__main__':
                    endurance_mode='T',
                    wing_airfoil='NACA4206',
                    propeller='9x4',
+                   num_engines=5,
                    materials='wood')
 
     from parapy.gui import display
 
+    obj.iterate()
     display(obj)

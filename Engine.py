@@ -16,6 +16,29 @@ class Engine(Base):
     pos_y = Input()
     pos_z = Input()
 
+    @Attribute
+    def iterate(self):
+        any_changes = False
+        change = True
+        last_change_direction = 0
+
+        while change:
+            change = False
+            if not self.motor.voltage_valid and self.motor.current_valid\
+                    and self.motor.motor_idx < self.motor_data.shape[0] - 1 and not (last_change_direction < 0):
+                change = True
+                any_changes = True
+                last_change_direction = 1
+                self.motor.motor_idx += 1
+            if not self.motor.current_valid and self.motor.voltage_valid and self.motor.motor_idx > 0 \
+                    and not (last_change_direction > 0):
+                change = True
+                any_changes = True
+                last_change_direction = -1
+                self.motor.motor_idx -= 1
+
+        return any_changes
+
     @Input
     def cog(self):
         return Point(self.pos_x+self.motor.length/2, self.pos_y, self.pos_z)
