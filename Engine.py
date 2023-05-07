@@ -5,6 +5,9 @@ from parapy.geom.generic.positioning import Point, Vector
 from parapy.core.validate import IsInstance
 from Motor import Motor
 
+import numpy as np
+
+
 class Engine(Base):
     prop = Input()
     velocity_op = Input()
@@ -15,6 +18,7 @@ class Engine(Base):
     pos_x = Input()
     pos_y = Input()
     pos_z = Input()
+    iteration_history = Input()
 
     @Attribute
     def iterate(self):
@@ -24,19 +28,32 @@ class Engine(Base):
 
         while change:
             change = False
-            if not self.motor.voltage_valid and self.motor.current_valid\
-                    and self.motor.motor_idx < self.motor_data.shape[0] - 1 and not (last_change_direction < 0):
+            if (not self.motor.voltage_valid) and self.motor.current_valid\
+                    and self.motor.motor_idx < self.motor_data.shape[0] - 1 and (not (last_change_direction < 0))\
+                    and (not (self.iteration_history[1] > 0 > self.iteration_history[2])):
                 change = True
                 any_changes = True
                 last_change_direction = 1
                 self.motor.motor_idx += 1
             if not self.motor.current_valid and self.motor.voltage_valid and self.motor.motor_idx > 0 \
-                    and not (last_change_direction > 0):
+                    and not (last_change_direction > 0)\
+                    and not (self.iteration_history[2] > 0 > self.iteration_history[1]):
+                change = True
+                any_changes = True
+                last_change_direction = -1
+                self.motor.motor_idx -= 1
+            if not self.motor.current_valid and not self.motor.voltage_valid and self.motor.motor_idx > 0 \
+                    and not (last_change_direction > 0) \
+                    and self.motor_data[self.motor.motor_idx, 6] < self.motor_data[self.motor.motor_idx-1, 6]\
+                    and not (self.iteration_history[2] > 0 > self.iteration_history[1]):
                 change = True
                 any_changes = True
                 last_change_direction = -1
                 self.motor.motor_idx -= 1
 
+        self.iteration_history[0] = self.iteration_history[1]
+        self.iteration_history[1] = self.iteration_history[2]
+        self.iteration_history[2] = last_change_direction
         return any_changes
 
     @Input

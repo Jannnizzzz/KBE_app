@@ -9,6 +9,7 @@ from __init__ import generate_warning
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 class Aircraft(Base):
@@ -119,9 +120,10 @@ class Aircraft(Base):
 
             # adjust motor selection
             for i in range(self.num_engines):
-                if self.engines[i].iterate:
+                change = self.engines[i].iterate
+                if change:
                     print("Change motor")
-                any_changes = any_changes or self.engines[i].iterate
+                any_changes = any_changes or change
 
             # calculate, if the capacity of the battery has to be changed
             factor_cap = self.endurance/self.endurance_time if self.endurance_mode == 'T'\
@@ -199,7 +201,8 @@ class Aircraft(Base):
                       motor_data=self.motor_data,
                       pos_x=0,
                       pos_y=-(self.num_engines-1)*3/4*self.prop_diameter + child.index * 3/2*self.prop_diameter,
-                      pos_z=0 if child.index != (self.num_engines-1)/2 else self.prop_diameter*3/4)
+                      pos_z=0 if child.index != (self.num_engines-1)/2 else self.prop_diameter*3/4,
+                      iteration_history=np.zeros((3,)))
 
     @Part
     def payload(self):
@@ -215,15 +218,31 @@ class Aircraft(Base):
     #def fuselage(self):
     #    return Fuselage()
 
+    @action
+    def create_engine_curve(self):
+        characteristics, _ = self.engines[0].propeller.prop_characteristics
+        v, t = characteristics[:, 0, :], self.num_engines*characteristics[:, 7, :]
+
+        plt.plot(v, t, 'b')
+        plt.plot(self.velocity, self.thrust, 'r*')
+        plt.plot([0, self.velocity, self.velocity], [self.thrust, self.thrust, 0], 'k:')
+        plt.xlabel("Velocity (km/h)")
+        plt.ylabel("Thrust (N)")
+        plt.title("Thrust over velocity of the drone")
+        plt.savefig('Outputs/engine_curves.pdf')
+        plt.close()
+
 
 if __name__ == '__main__':
     obj = Aircraft(endurance=1,
                    endurance_mode='T',
-                   propeller='9x4',
-                   num_engines=5,
+                   propeller='9x3',
+                   num_engines=4,
                    materials='wood')
 
     from parapy.gui import display
 
-    #obj.iterate()
+    obj.iterate()
+    print("Iteration done")
+    obj.create_engine_curve()
     display(obj)
