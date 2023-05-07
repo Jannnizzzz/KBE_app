@@ -59,7 +59,9 @@ class Aircraft(Base):
     def is_valid(self):
         valid = True
         for i in range(self.num_engines):
-            valid = valid and self.engines[i].motor.is_valid and self.engines[i].propeller.op_valid
+            engine_valid = self.engines[i].motor.is_valid
+            propeller_valid = self.engines[i].propeller.op_valid
+            valid = valid and engine_valid and propeller_valid
         return valid
 
     @Attribute
@@ -106,6 +108,72 @@ class Aircraft(Base):
     def endurance_range(self):
         return self.velocity*self.endurance_time
 
+    @Attribute
+    def battery_cells_required(self):
+        cells = np.NaN
+        for i in range(self.num_engines):
+            cells = np.nanmin([cells, self.engines[i].motor.battery_cells_required])
+        return cells.astype(int)
+
+    @Attribute
+    def motor_data(self):
+        data = pd.read_excel('Motor_data.xlsx')
+        data = np.array(data)
+        data = data[data[:, 1].argsort()]
+        return data
+
+    @Attribute
+    def thrust(self):
+        # return self.aerodynamic_efficiency * self.total_weight
+        surface = self.total_weight/55
+        rho = 1.225
+        cD0 = .02
+        k = 1 / (np.pi * surface/self.max_dimensions**2 * .8)
+
+        return 0.5 * rho * surface * cD0 * (self.velocity/3.6)**2 \
+            + 2 * self.total_weight**2 * k / (rho * surface * (self.velocity/3.6)**2)
+
+    @Part
+    def battery(self):
+        return Battery(cap=self.battery_capacity,
+                       cells=self.battery_cells)
+
+    @Part
+    def wing(self):
+        return Semiwing()
+
+    #@Part
+    #def tail(self):
+    #    return Tail()
+
+    @Part
+    def engines(self):
+        return Engine(quantify=self.num_engines,
+                      prop=self.propeller,
+                      velocity_op=self.velocity,
+                      thrust_op=self.thrust/self.num_engines,
+                      max_voltage=self.battery.voltage,
+                      voltage_per_cell=self.battery.voltage_per_cell,
+                      motor_data=self.motor_data,
+                      pos_x=0,
+                      pos_y=-(self.num_engines-1)*3/4*self.prop_diameter + child.index * 3/2*self.prop_diameter,
+                      pos_z=0 if child.index != (self.num_engines-1)/2 else self.prop_diameter*3/4,
+                      iteration_history=np.zeros((3,)))
+
+    @Part
+    def payload(self):
+        return Payload(length=self.payload_length,
+                       width=self.payload_width,
+                       height=self.payload_height,
+                       weight=9.80665*self.payload_weight,
+                       cog_x=self.battery.cog.x-self.battery.length/2-0.06,
+                       cog_y=0,
+                       cog_z=0)
+
+    #@Part
+    #def fuselage(self):
+    #    return Fuselage()
+
     @action
     def iterate(self):
         any_changes = True
@@ -144,82 +212,8 @@ class Aircraft(Base):
             msg = "The iteration result found is not valid."
             generate_warning("Iteration result invalid", msg)
 
-    @Attribute
-    def battery_cells_required(self):
-        cells = np.NaN
-        for i in range(self.num_engines):
-            cells = np.nanmin([cells, self.engines[i].motor.battery_cells_required])
-        return cells.astype(int)
-
-    @Attribute
-    def motor_data(self):
-        data = pd.read_excel('Motor_data.xlsx')
-        data = np.array(data)
-        data = data[data[:, 1].argsort()]
-        return data
-
-    @Attribute
-    def thrust(self):
-        # return self.aerodynamic_efficiency * self.total_weight
-        surface = self.total_weight/55
-        rho = 1.225
-        cD0 = .02
-        k = 1 / (np.pi * surface/self.max_dimensions**2 * .8)
-
-        return 0.5 * rho * surface * cD0 * (self.velocity/3.6)**2 \
-            + 2 * self.total_weight**2 * k / (rho * surface * (self.velocity/3.6)**2)
-
-    @Part
-    def battery(self):
-        return Battery(cap=self.battery_capacity,
-                       cells=self.battery_cells)
-
-    @Part
-    def payload(self):
-        return Payload(width = self.payload_width,
-                       length = self.payload_length,
-                       height = self.payload_height,
-                       weight = self.payload.weight
-        )
-
-    @Part
-    def wing(self):
-        return Semiwing()
-
-    #@Part
-    #def tail(self):
-    #    return Tail()
-
-    @Part
-    def engines(self):
-        return Engine(quantify=self.num_engines,
-                      prop=self.propeller,
-                      velocity_op=self.velocity,
-                      thrust_op=self.thrust/self.num_engines,
-                      max_voltage=self.battery.voltage,
-                      voltage_per_cell=self.battery.voltage_per_cell,
-                      motor_data=self.motor_data,
-                      pos_x=0,
-                      pos_y=-(self.num_engines-1)*3/4*self.prop_diameter + child.index * 3/2*self.prop_diameter,
-                      pos_z=0 if child.index != (self.num_engines-1)/2 else self.prop_diameter*3/4,
-                      iteration_history=np.zeros((3,)))
-
-    @Part
-    def payload(self):
-        return Payload(length=0.1,
-                       width=0.1,
-                       height=0.1,
-                       weight=9.80665*2,
-                       cog_x=self.battery.cog.x-self.battery.length/2-0.06,
-                       cog_y=0,
-                       cog_z=0)
-
-    #@Part
-    #def fuselage(self):
-    #    return Fuselage()
-
     @action
-    def create_engine_curve(self):
+    def create_prop_curve(self):
         characteristics, _ = self.engines[0].propeller.prop_characteristics
         v, t = characteristics[:, 0, :], self.num_engines*characteristics[:, 7, :]
 
@@ -229,20 +223,46 @@ class Aircraft(Base):
         plt.xlabel("Velocity (km/h)")
         plt.ylabel("Thrust (N)")
         plt.title("Thrust over velocity of the drone")
-        plt.savefig('Outputs/engine_curves.pdf')
+        plt.savefig('Outputs/prop_curves.pdf')
         plt.close()
+
+    @action
+    def create_motor_curve(self):
+        characteristics, rpm = self.engines[0].propeller.prop_characteristics
+        v, q = characteristics[:, 0, :], characteristics[:, 6, :]
+        rpm_matrix = np.ones((characteristics.shape[0], 1)) * rpm
+
+        k_phi = self.engines[0].motor.k_phi
+        resistance = self.engines[0].motor.resistance
+        max_voltage = self.engines[0].motor.max_voltage
+
+        motor_speed = np.array([0, max_voltage/k_phi])
+        torque = (max_voltage/k_phi - motor_speed) / (resistance * 2*np.pi/k_phi**2)
+
+        plt.plot(torque, motor_speed)
+        sc = plt.scatter(q, rpm_matrix/60, s=2, c=v)
+        plt.plot(self.engines[0].propeller.torque_op, self.engines[0].propeller.rpm_op/60, "r*")
+        plt.plot([0, self.engines[0].propeller.torque_op, self.engines[0].propeller.torque_op],
+                 [self.engines[0].propeller.rpm_op/60, self.engines[0].propeller.rpm_op/60, 0], 'k:')
+        plt.colorbar(sc, label="Velocity (km/h)")
+        plt.xlabel("Motor Torque (Nm)")
+        plt.ylabel("Motor Speed (1/s)")
+        plt.title("Motor Characteristics for max. Voltage\n and Propeller Torque Requirement")
+        plt.savefig('Outputs/motor_curves.pdf')
+        plt.close()
+
+
 
 
 if __name__ == '__main__':
     obj = Aircraft(endurance=1,
                    endurance_mode='T',
-                   propeller='9x3',
+                   propeller='7x3',
                    num_engines=4,
                    materials='wood')
 
     from parapy.gui import display
 
     obj.iterate()
-    print("Iteration done")
-    obj.create_engine_curve()
+    obj.create_motor_curve()
     display(obj)
