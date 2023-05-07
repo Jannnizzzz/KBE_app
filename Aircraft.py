@@ -75,19 +75,24 @@ class Aircraft(Base):
     def cog(self):
         cog_x, cog_y, cog_z = 0, 0, 0
 
+        # COG influence of the battery
         cog_x += self.battery.cog.x * self.battery.weight
         cog_y += self.battery.cog.y * self.battery.weight
         cog_z += self.battery.cog.z * self.battery.weight
 
+        # COG influence of the payload
         cog_x += self.payload.cog.x * self.payload.weight
         cog_y += self.payload.cog.y * self.payload.weight
         cog_z += self.payload.cog.z * self.payload.weight
 
+        # COG influence of the engines
         for i in range(self.num_engines):
             cog_x += self.engines[i].cog.x * self.engines[i].weight
             cog_y += self.engines[i].cog.y * self.engines[i].weight
             cog_z += self.engines[i].cog.z * self.engines[i].weight
 
+
+        # final COG calculation
         cog_x /= self.total_weight
         cog_y /= self.total_weight
         cog_z /= self.total_weight
@@ -124,7 +129,6 @@ class Aircraft(Base):
 
     @Attribute
     def thrust(self):
-        # return self.aerodynamic_efficiency * self.total_weight
         surface = self.total_weight/55
         rho = 1.225
         cD0 = .02
@@ -166,7 +170,7 @@ class Aircraft(Base):
                        width=self.payload_width,
                        height=self.payload_height,
                        weight=9.80665*self.payload_weight,
-                       cog_x=self.battery.cog.x-self.battery.length/2-0.06,
+                       cog_x=self.battery.cog.x-self.battery.length/2-self.payload_length/2,
                        cog_y=0,
                        cog_z=0)
 
@@ -178,8 +182,6 @@ class Aircraft(Base):
     def iterate(self):
         any_changes = True
 
-        # initialize flag to prevent endless switching of motors due to no fitting one
-        # last_motor_change_direction = np.zeros((self.num_engines,))
         while any_changes:
             print("=================================")
             print("Total weight", self.total_weight/9.80665)
@@ -264,5 +266,4 @@ if __name__ == '__main__':
     from parapy.gui import display
 
     obj.iterate()
-    obj.create_motor_curve()
     display(obj)
