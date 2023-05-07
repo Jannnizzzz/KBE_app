@@ -54,6 +54,15 @@ class Propeller(Base):
         else:
             return False
 
+    def variable_op_valid(self, velocity, thrust):
+        characteristics, _ = self.prop_characteristics
+        if velocity <= self.max_velocity \
+                and self.variable_thrust_op(self.variable_operation_point(velocity, thrust)) <= self.max_thrust\
+                and abs(self.variable_thrust_op(self.variable_operation_point(velocity, thrust)) - self.thrust) < 3:
+            return True
+        else:
+            return False
+
     @Attribute
     def operation_point(self):
         characteristics, rpm = self.prop_characteristics
@@ -63,20 +72,40 @@ class Propeller(Base):
         idx = np.unravel_index(np.nanargmin(difference), difference.shape)
         return idx
 
+    def variable_operation_point(self, velocity, thrust):
+        characteristics, rpm = self.prop_characteristics
+        diff_velocities = (characteristics[:, 0, :] - velocity) / self.max_velocity
+        diff_thrust = (characteristics[:, 7, :] - thrust) / self.max_thrust
+        difference = np.abs(diff_velocities) + np.abs(diff_thrust)
+        idx = np.unravel_index(np.nanargmin(difference), difference.shape)
+        return idx
+
     @Attribute
     def rpm_op(self):
         _, rpm = self.prop_characteristics
         return rpm[self.operation_point[1]]
+
+    def variable_rpm_op(self, operation_point):
+        _, rpm = self.prop_characteristics
+        return rpm[operation_point[1]]
 
     @Attribute
     def torque_op(self):
         characteristics, _ = self.prop_characteristics
         return characteristics[self.operation_point[0], 6, self.operation_point[1]]
 
+    def variable_torque_op(self, operation_point):
+        characteristics, _ = self.prop_characteristics
+        return characteristics[operation_point[0], 6, operation_point[1]]
+
     @Attribute
     def thrust_op(self):
         characteristics, _ = self.prop_characteristics
         return characteristics[self.operation_point[0], 7, self.operation_point[1]]
+
+    def variable_thrust_op(self, operation_point):
+        characteristics, _ = self.prop_characteristics
+        return characteristics[operation_point[0], 7, operation_point[1]]
 
     @Part
     def body(self):

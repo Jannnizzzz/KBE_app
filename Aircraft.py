@@ -257,6 +257,19 @@ class Aircraft(Base):
         plt.savefig('Outputs/motor_curves.pdf')
         plt.close()
 
+    @action
+    def velocity_sweep(self):
+        velocity = np.linspace(50, 150, 10)
+        drag = 0.05 * (velocity/3.6)**2
+        motor_speed, torque, thrust, voltage, current, op_valid = self.engines[0].variable_velocity(velocity, drag/self.num_engines)
+
+        plt.plot(velocity, motor_speed)
+        plt.xlabel("Velocity (km/h)")
+        plt.ylabel("Motor Speed (1/s)")
+        plt.title("")
+        plt.savefig('Outputs/velocity_sweep.pdf')
+        plt.close()
+
 
 
 
@@ -275,5 +288,6 @@ if __name__ == '__main__':
 
     from parapy.gui import display
 
-    obj.iterate()
+    #obj.iterate()
+    obj.velocity_sweep()
     display(obj)
