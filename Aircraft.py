@@ -13,31 +13,36 @@ import matplotlib.pyplot as plt
 
 
 class Aircraft(Base):
-    endurance = Input()
-    endurance_mode = Input()
-    airfoil_root = Input()
-    airfoil_tip  = Input()
-    propeller = Input()
-    materials = Input()
-    battery_capacity = Input(1)
-    battery_cells = Input(3)
-    velocity = Input()
-    num_engines = Input()
+    # main input parameters
+    endurance = Input()             # endurance time (in h) or range (in km) for design
+    endurance_mode = Input()        # either 'T' for time or 'R' for range
+    velocity = Input()              # design velocity (in km/h)
+    propeller = Input()             # propeller used (format 'DxH', in inch)
+    num_engines = Input()           # number of separate engines (propeller-motor-pair)
+    structural_material = Input()
+    airfoil_root = Input()          # name of the airfoil of the wings root
+    airfoil_tip = Input()           # name of the airfoil of the wings root
 
-    air_density = Input(1.225)
+    # maximum dimensions of the drone
+    max_width = Input(3)            # maximum wing span (in m)
+    max_length = Input(3)           # maximum length (in m)
+    max_height = Input(0.2)         # maximum height (in m)
 
-    max_width = Input(3)
-    max_length = Input(3)
-    max_height = Input(0.2)
-
-    payload_width   = Input(0.2)            #m
-    payload_length  = Input(0.5)            #m
-    payload_height  = Input(0.2)            #m
-    payload_weight  = Input(2.0)            #Kg
-
-    structural_material = Input('')
+    # payload dimensions
+    payload_width   = Input(0.2)    # in m
+    payload_length  = Input(0.5)    # in m
+    payload_height  = Input(0.2)    # in m
+    payload_weight  = Input(2.0)    # in kg
 
     tail_cl     = 0.0     #as it should be symmetric
+    air_density = Input(1.225)
+
+    # battery parameters (initial value, to be changed during iteration)
+    battery_capacity = Input(1)
+    battery_cells = Input(3)
+
+    #__initargs__ = "endurance, endurance_mode, velocity, propeller, num_engines"# , structural_material, " \
+                   # + "airfoil_root, airfoil_tip"
 
 
     @Attribute
@@ -259,14 +264,14 @@ if __name__ == '__main__':
     data = pd.read_excel('Input_data.xlsx')
     data = np.array(data)
 
-    obj = Aircraft(endurance=data[0,1],
-                   endurance_mode=data[1,1],
-                   velocity=data[2,1],
-                   propeller=data[3,1],
-                   num_engines=data[4,1],
-                   structural_material=data[5,1],
-                   airfoil_root=data[6,1],
-                   airfoil_tip=data[7,1])
+    obj = Aircraft(endurance=data[0, 1],
+                   endurance_mode=data[1, 1],
+                   velocity=data[2, 1],
+                   propeller=data[3, 1],
+                   num_engines=data[4, 1],
+                   structural_material=data[5, 1],
+                   airfoil_root=data[6, 1],
+                   airfoil_tip=data[7, 1])
 
     from parapy.gui import display
 
