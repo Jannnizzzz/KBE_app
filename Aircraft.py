@@ -21,15 +21,14 @@ class Aircraft(Base):
     materials = Input()
     battery_capacity = Input(1)
     battery_cells = Input(3)
-    velocity = Input(100)
-    num_engines = Input(5)
-    max_dimensions = Input(3)
+    velocity = Input()
+    num_engines = Input()
 
     air_density = Input(1.225)
 
-    max_width = Input()
-    max_length = Input()
-    max_height = Input()
+    max_width = Input(3)
+    max_length = Input(3)
+    max_height = Input(0.2)
 
     payload_width   = Input(0.2)            #m
     payload_length  = Input(0.5)            #m
@@ -132,7 +131,7 @@ class Aircraft(Base):
         surface = self.total_weight/55
         rho = 1.225
         cD0 = .02
-        k = 1 / (np.pi * surface/self.max_dimensions**2 * .8)
+        k = 1 / (np.pi * surface/self.max_width**2 * .8)
 
         return 0.5 * rho * surface * cD0 * (self.velocity/3.6)**2 \
             + 2 * self.total_weight**2 * k / (rho * surface * (self.velocity/3.6)**2)
@@ -257,11 +256,17 @@ class Aircraft(Base):
 
 
 if __name__ == '__main__':
-    obj = Aircraft(endurance=1,
-                   endurance_mode='T',
-                   propeller='7x3',
-                   num_engines=4,
-                   materials='wood')
+    data = pd.read_excel('Input_data.xlsx')
+    data = np.array(data)
+
+    obj = Aircraft(endurance=data[0,1],
+                   endurance_mode=data[1,1],
+                   velocity=data[2,1],
+                   propeller=data[3,1],
+                   num_engines=data[4,1],
+                   structural_material=data[5,1],
+                   airfoil_root=data[6,1],
+                   airfoil_tip=data[7,1])
 
     from parapy.gui import display
 
