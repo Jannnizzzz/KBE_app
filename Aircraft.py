@@ -1,7 +1,7 @@
 
 from parapy.core import *
 from parapy.geom.generic.positioning import Point
-from Semiwing import Wing
+from Wing import Semiwing
 from Battery import Battery
 from Engine import Engine
 from Payload import Payload
@@ -25,7 +25,6 @@ class Aircraft(Base):
     max_dimensions = Input(3)
 
     air_density = Input(1.225)
-    num_engines = Input(1)
 
     max_width = Input()
     max_length = Input()
@@ -220,12 +219,11 @@ class Aircraft(Base):
 if __name__ == '__main__':
     obj = Aircraft(endurance=1,
                    endurance_mode='T',
-                   wing_airfoil='NACA4206',
                    propeller='9x4',
                    num_engines=5,
                    materials='wood')
 
     from parapy.gui import display
 
-    obj.iterate()
+    #obj.iterate()
     display(obj)
