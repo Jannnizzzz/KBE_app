@@ -27,9 +27,8 @@ function [Res, AC] = run_q3d(wing_planform_geom, wing_incidence_angle, visc_opti
    AC.Aero.MaxIterIndex = 150;    %Maximum number of Iteration for the
                                    %convergence of viscous calculation
 
-
    % Flight Condition
-   AC.Aero.V     = velocity/3.6;            % flight speed (m/s)
+   AC.Aero.V     = velocity;            % flight speed (m/s)
    AC.Aero.rho   = air_density;         % air density  (kg/m3)
    AC.Aero.alt   = 0;             % flight altitude (m)
    AC.Aero.Re    = reynolds_number;        % reynolds number (bqased on mean aerodynamic chord)
@@ -39,10 +38,10 @@ function [Res, AC] = run_q3d(wing_planform_geom, wing_incidence_angle, visc_opti
 
 
    %%
-   tic
+   %tic
 
    Res = Q3D_solver(AC);
 
-   toc
+   %toc
 
 end

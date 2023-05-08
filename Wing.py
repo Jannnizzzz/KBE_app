@@ -82,17 +82,14 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
         return[self.air_density*self.velocity*self.mean_aerodynamic_chord/self.dynamic_viscosity]
 
 
-    @Attribute
-    def run_q3d(self):
+    def run_q3d(self, velocity, cl):
         """Run Q3D (MATLAB) and get back all results and input"""
         root_data = self.root_airfoil.yt_xl_xu
         tip_data = self.tip_airfoil.yt_xl_xu
         visc_option = self.visc_option
-        velocity    = self.velocity
         air_density = self.air_density
-        reynolds_number = self.reynolds_number
+        reynolds_number = self.air_density*velocity/3.6*self.mean_aerodynamic_chord/self.dynamic_viscosity
         incidence       = self.incidence
-        cl              = self.cl
 
 
 
@@ -111,33 +108,33 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
             matlab.double(root_data),
             matlab.double(tip_data),
             matlab.double([air_density]),
-            matlab.double([velocity]),
+            matlab.double([velocity/3.6]),
             matlab.double([reynolds_number]),
             matlab.double([cl]),
             nargout=2
         )
 
-    @Attribute
-    def q3d_res(self) -> Dict:
+    def q3d_res(self, velocity, cl) -> Dict:
         """q3d results"""
-        return self.run_q3d[0]
+        return self.run_q3d(velocity, cl)[0]
 
-    @Attribute
-    def q3d_ac(self) -> Dict:
+    def q3d_ac(self, velocity, cl) -> Dict:
         """q3d inputs"""
-        return self.run_q3d[1]
+        return self.run_q3d(velocity, cl)[1]
 
     @Attribute
     def wing_cl(self) -> float:
-        return self.q3d_res["CLwing"]
+        return self.q3d_res(self.velocity, self.cl)["CLwing"]
+
+    def variable_wing_cd(self, velocity, cl) -> float:
+        return self.q3d_res(velocity, cl)["CDwing"]
 
     @Attribute
     def wing_cd(self) -> float:
-        return self.q3d_res["CDwing"]
+        return self.q3d_res(self.velocity, self.cl)["CDwing"]
 
-    @Attribute
-    def wing_alfa(self) -> float:
-        return self.q3d_res["Alfa"]
+    def wing_alfa(self, velocity) -> float:
+        return self.q3d_res(velocity)["Alfa"]
 
 
     #print(wing_cl)

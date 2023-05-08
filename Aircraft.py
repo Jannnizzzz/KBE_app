@@ -144,13 +144,30 @@ class Aircraft(Base):
         # wing drag
         cD = self.wing.wing_cd
         air_density = self.air_density
-        velocity = self.velocity/3.6    # in m/s
+        velocity = self.velocity        # in km/h
         surface = 1                     # dummy value for now
-        drag += air_density/2 * velocity**2 * surface * cD
+        drag += air_density/2 * (velocity/3.6)**2 * surface * cD
 
         # TODO: drag of other components
 
         return drag
+
+    def variable_drag(self, velocities):
+        drags = np.zeros_like(velocities)
+        cLs = np.zeros_like(velocities)
+        cDs = np.zeros_like(velocities)
+
+        for i, velocity in enumerate(velocities):
+            # wing drag
+            cLs[i] = self.total_weight/(self.wing_surface_area*0.5*self.air_density*(velocity/3.6)**2)
+            cDs[i] = self.wing.variable_wing_cd(velocity, cLs[i])
+            air_density = self.air_density
+            surface = 1                     # dummy value for now
+            drags[i] += air_density/2 * (velocity/3.6)**2 * surface * cDs[i]
+
+            # TODO: drag of other components
+
+        return drags, cLs, cDs
 
     @Attribute
     def motor_y_positions(self):
@@ -244,10 +261,10 @@ class Aircraft(Base):
             any_changes = False
 
             # change the required cL of the wing to match current conditions
-            self.cl_required = self.total_weight/(self.wing_surface_area*0.5*self.air_density*self.velocity**2)
+            self.cl_required = self.total_weight/(self.wing_surface_area*0.5*self.air_density*(self.velocity/3.6)**2)
 
             # calculate, if the surface area of the wing has to be changed
-            required_extra_area = self.total_weight-(self.wing_surface_area*self.air_density*self.cl_required*0.5*self.velocity**2)/(self.air_density*self.cl_required*0.5*self.velocity**2)
+            required_extra_area = (self.total_weight-self.wing_surface_area*self.air_density*self.cl_required*0.5*(self.velocity/3.6)**2)/(self.air_density*self.cl_required*0.5*(self.velocity/3.6)**2)
             if abs(required_extra_area) >= 0.1:
                 print("Change surface area")
                 any_changes = True
@@ -320,16 +337,30 @@ class Aircraft(Base):
 
     @action
     def velocity_sweep(self):
-        velocity = np.linspace(50, 150, 10)
-        drag = 0.05 * (velocity/3.6)**2
-        motor_speed, torque, thrust, voltage, current, op_valid = self.engines[0].variable_velocity(velocity, drag/self.num_engines)
+        velocities = np.linspace(50, 150, 11)
+        drags, cLs, cDs = self.variable_drag(velocities)
+        motor_speed, torque, thrust, voltage, current, op_valid = self.engines[0].variable_velocity(velocities, drags/self.num_engines)
 
-        plt.plot(velocity, motor_speed)
+        fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True, sharey=False)
+        ax1.plot(velocities, motor_speed)
+        ax1.set_ylabel("Motor Speed (1/s)")
+        ax1.set_title("")
+
+        ax2.plot(velocities, drags)
+        ax2.set_ylabel("Drag (N)")
+        ax2.set_title("")
+
+        ax3.plot(velocities, current)
+        ax3.set_ylabel("Current (A)")
+        ax3.set_title("")
+
+        ax4.plot(velocities, cDs/cLs)
+        ax4.set_ylabel("Aerodynamic Efficiency (-)")
+        ax4.set_title("")
+
         plt.xlabel("Velocity (km/h)")
-        plt.ylabel("Motor Speed (1/s)")
-        plt.title("")
         plt.savefig('Outputs/velocity_sweep.pdf')
-        plt.close()
+        plt.close(fig)
 
 
 
