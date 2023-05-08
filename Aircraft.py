@@ -38,6 +38,7 @@ class Aircraft(Base):
 
     wing_surface_area   = 1         #dummy value
     tail_cl     = 0.0               #as it should be symmetric
+    cl_required = Input(0.4)
 
     air_density = Input(1.225)
 
@@ -78,10 +79,6 @@ class Aircraft(Base):
         for i in range(self.num_engines):
             motor_weight += self.engines[i].weight
         return self.battery.weight + self.payload.weight + motor_weight
-
-    @Attribute
-    def cl_required(self):
-        return self.total_weight/(self.wing_surface_area*0.5*self.air_density*self.velocity**2)
 
 
     @Attribute
@@ -141,14 +138,19 @@ class Aircraft(Base):
         return data
 
     @Attribute
-    def thrust(self):
-        surface = self.total_weight/55
-        rho = 1.225
-        cD0 = .02
-        k = 1 / (np.pi * surface/self.max_width**2 * .8)
+    def drag(self):
+        drag = 0
 
-        return 0.5 * rho * surface * cD0 * (self.velocity/3.6)**2 \
-            + 2 * self.total_weight**2 * k / (rho * surface * (self.velocity/3.6)**2)
+        # wing drag
+        cD = self.wing.wing_cd
+        air_density = self.air_density
+        velocity = self.velocity/3.6    # in m/s
+        surface = 1                     # dummy value for now
+        drag += air_density/2 * velocity**2 * surface * cD
+
+        # TODO: drag of other components
+
+        return drag
 
     @Attribute
     def motor_y_positions(self):
@@ -183,7 +185,10 @@ class Aircraft(Base):
 
     @Part
     def wing(self):
-        return Semiwing()
+        return Semiwing(airfoil_root=self.airfoil_root,
+                        airfoil_tip=self.airfoil_tip,
+                        cl=self.cl_required,
+                        air_density=self.air_density)
 
     @Part
     def fuselage(self):
@@ -198,7 +203,7 @@ class Aircraft(Base):
         return Engine(quantify=self.num_engines,
                       prop=self.propeller,
                       velocity_op=self.velocity,
-                      thrust_op=self.thrust/self.num_engines,
+                      thrust_op=self.drag/self.num_engines,
                       max_voltage=self.battery.voltage,
                       voltage_per_cell=self.battery.voltage_per_cell,
                       motor_data=self.motor_data,
@@ -237,6 +242,9 @@ class Aircraft(Base):
             print("Total mass", self.total_weight/9.80665, " kg")
             print("Capacity", self.battery.capacity, " Ah")
             any_changes = False
+
+            # change the required cL of the wing to match current conditions
+            self.cl_required = self.total_weight/(self.wing_surface_area*0.5*self.air_density*self.velocity**2)
 
             # calculate, if the surface area of the wing has to be changed
             required_extra_area = self.total_weight-(self.wing_surface_area*self.air_density*self.cl_required*0.5*self.velocity**2)/(self.air_density*self.cl_required*0.5*self.velocity**2)
@@ -277,8 +285,8 @@ class Aircraft(Base):
         v, t = characteristics[:, 0, :], self.num_engines*characteristics[:, 7, :]
 
         plt.plot(v, t, 'b')
-        plt.plot(self.velocity, self.thrust, 'r*')
-        plt.plot([0, self.velocity, self.velocity], [self.thrust, self.thrust, 0], 'k:')
+        plt.plot(self.velocity, self.drag, 'r*')
+        plt.plot([0, self.velocity, self.velocity], [self.drag, self.drag, 0], 'k:')
         plt.xlabel("Velocity (km/h)")
         plt.ylabel("Thrust (N)")
         plt.title("Thrust over velocity of the drone")
