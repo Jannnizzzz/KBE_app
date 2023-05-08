@@ -50,6 +50,16 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
     def profiles(self):
         return [self.root_airfoil, self.tip_airfoil]
 
+    @Attribute
+    def root_cst(self):
+        root_data = self.root_airfoil.yt_xl_xu
+        return MATLAB_Q3D_ENGINE.demo(matlab.double(root_data), nargout=1)
+
+    @Attribute
+    def tip_cst(self):
+        tip_data = self.tip_airfoil.yt_xl_xu
+        return MATLAB_Q3D_ENGINE.demo(matlab.double(tip_data), nargout=1)
+
     @Part
     def root_airfoil(self):  # root airfoil will receive self.position as default
         return Airfoil(airfoil_name=self.airfoil_root,
@@ -84,8 +94,6 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
 
     def run_q3d(self, velocity, cl):
         """Run Q3D (MATLAB) and get back all results and input"""
-        root_data = self.root_airfoil.yt_xl_xu
-        tip_data = self.tip_airfoil.yt_xl_xu
         visc_option = self.visc_option
         air_density = self.air_density
         reynolds_number = self.air_density*velocity/3.6*self.mean_aerodynamic_chord/self.dynamic_viscosity
@@ -105,8 +113,8 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
             wing_geometry,
             incidence,
             visc_option,
-            matlab.double(root_data),
-            matlab.double(tip_data),
+            matlab.double(self.root_cst),
+            matlab.double(self.tip_cst),
             matlab.double([air_density]),
             matlab.double([velocity/3.6]),
             matlab.double([reynolds_number]),
