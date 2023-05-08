@@ -24,5 +24,6 @@ class Payload(Base):
     @Part
     def body(self):
         return Box(self.length, self.width, self.height,
+                   color="green",
                    centered=True,
                    position=Position(self.cog, Orientation(x='-x', y='y')))

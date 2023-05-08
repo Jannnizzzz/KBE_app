@@ -1,5 +1,6 @@
 
 from parapy.core import *
+from parapy.exchange import STEPWriter
 from parapy.geom.generic.positioning import Point
 from Wing import Semiwing
 from Battery import Battery
@@ -10,38 +11,42 @@ from Fuselage import Fuselage
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 class Aircraft(Base):
-    endurance = Input()
-    endurance_mode = Input()
-    airfoil_root = Input()
-    airfoil_tip  = Input()
-    propeller = Input()
-    materials = Input()
-    battery_capacity = Input(1)
-    battery_cells = Input(3)
-    velocity = Input(100)
-    num_engines = Input(5)
-    max_dimensions = Input(3)
+    # main input parameters
+    endurance = Input()             # endurance time (in h) or range (in km) for design
+    endurance_mode = Input()        # either 'T' for time or 'R' for range
+    velocity = Input()              # design velocity (in km/h)
+    propeller = Input()             # propeller used (format 'DxH', in inch)
+    num_engines = Input()           # number of separate engines (propeller-motor-pair)
+    structural_material = Input()
+    airfoil_root = Input()          # name of the airfoil of the wings root
+    airfoil_tip = Input()           # name of the airfoil of the wings root
 
-    wing_surface_area   = 1 #dummy value
+    # maximum dimensions of the drone
+    max_width = Input(3)            # maximum wing span (in m)
+    max_length = Input(3)           # maximum length (in m)
+    max_height = Input(0.2)         # maximum height (in m)
+
+    # payload dimensions
+    payload_width   = Input(0.2)    # in m
+    payload_length  = Input(0.5)    # in m
+    payload_height  = Input(0.2)    # in m
+    payload_weight  = Input(2.0)    # in kg
+
+    wing_surface_area   = 1         #dummy value
+    tail_cl     = 0.0               #as it should be symmetric
 
     air_density = Input(1.225)
-    num_engines = Input(1)
 
-    max_width = Input()
-    max_length = Input()
-    max_height = Input()
+    # battery parameters (initial value, to be changed during iteration)
+    battery_capacity = Input(1)
+    battery_cells = Input(3)
 
-    payload_width   = Input(0.2)            #m
-    payload_length  = Input(0.5)            #m
-    payload_height  = Input(0.2)            #m
-    payload_weight  = Input(2.0)            #Kg
-
-    structural_material = Input('')
-
-    tail_cl     = 0.0     #as it should be symmetric
+    #__initargs__ = "endurance, endurance_mode, velocity, propeller, num_engines"# , structural_material, " \
+                   # + "airfoil_root, airfoil_tip"
 
 
     @Attribute
@@ -62,7 +67,9 @@ class Aircraft(Base):
     def is_valid(self):
         valid = True
         for i in range(self.num_engines):
-            valid = valid and self.engines[i].motor.is_valid and self.engines[i].propeller.op_valid
+            engine_valid = self.engines[i].motor.is_valid
+            propeller_valid = self.engines[i].propeller.op_valid
+            valid = valid and engine_valid and propeller_valid
         return valid
 
     @Attribute
@@ -81,19 +88,24 @@ class Aircraft(Base):
     def cog(self):
         cog_x, cog_y, cog_z = 0, 0, 0
 
+        # COG influence of the battery
         cog_x += self.battery.cog.x * self.battery.weight
         cog_y += self.battery.cog.y * self.battery.weight
         cog_z += self.battery.cog.z * self.battery.weight
 
+        # COG influence of the payload
         cog_x += self.payload.cog.x * self.payload.weight
         cog_y += self.payload.cog.y * self.payload.weight
         cog_z += self.payload.cog.z * self.payload.weight
 
+        # COG influence of the engines
         for i in range(self.num_engines):
             cog_x += self.engines[i].cog.x * self.engines[i].weight
             cog_y += self.engines[i].cog.y * self.engines[i].weight
             cog_z += self.engines[i].cog.z * self.engines[i].weight
 
+
+        # final COG calculation
         cog_x /= self.total_weight
         cog_y /= self.total_weight
         cog_z /= self.total_weight
@@ -114,51 +126,6 @@ class Aircraft(Base):
     def endurance_range(self):
         return self.velocity*self.endurance_time
 
-    @action
-    def iterate(self):
-        any_changes = True
-
-        # initialize flag to prevent endless switching of motors due to no fitting one
-        # last_motor_change_direction = np.zeros((self.num_engines,))
-        while any_changes:
-            print("=================================")
-            print("Total weight", self.total_weight/9.80665)
-            print("Capacity", self.battery.capacity)
-            any_changes = False
-
-            # calculate, if the surface area of the wing has to be changed
-
-            required_extra_area = self.total_weight-(self.wing_surface_area*self.air_density*self.cl_required*0.5*self.velocity**2)/(self.air_density*self.cl_required*0.5*self.velocity**2)
-            if abs(required_extra_area) >= 0.1:
-                print("Change surface area")
-                any_changes = True
-                self.wing_surface_area += required_extra_area
-
-            # adjust motor selection
-            for i in range(self.num_engines):
-                if self.engines[i].iterate:
-                    print("Change motor")
-                any_changes = any_changes or self.engines[i].iterate
-
-            # calculate, if the capacity of the battery has to be changed
-            factor_cap = self.endurance/self.endurance_time if self.endurance_mode == 'T'\
-                                                            else self.endurance/self.endurance_range
-            num_add_cells = np.ceil(self.battery.capacity * (factor_cap - 1)/self.battery.capacity_per_cell)
-            if num_add_cells != 0:
-                print("Change capacity")
-                any_changes = True
-                self.battery_capacity += num_add_cells * self.battery.capacity_per_cell
-
-            # calculate, if the voltage of the battery has to be increased
-            if self.battery_cells != self.battery_cells_required:
-                print("Change voltage")
-                any_changes = True
-                self.battery_cells = self.battery_cells_required
-
-        if not self.is_valid:
-            msg = "The iteration result found is not valid."
-            generate_warning("Iteration result invalid", msg)
-
     @Attribute
     def battery_cells_required(self):
         cells = np.NaN
@@ -175,11 +142,10 @@ class Aircraft(Base):
 
     @Attribute
     def thrust(self):
-        # return self.aerodynamic_efficiency * self.total_weight
         surface = self.total_weight/55
         rho = 1.225
         cD0 = .02
-        k = 1 / (np.pi * surface/self.max_dimensions**2 * .8)
+        k = 1 / (np.pi * surface/self.max_width**2 * .8)
 
         return 0.5 * rho * surface * cD0 * (self.velocity/3.6)**2 \
             + 2 * self.total_weight**2 * k / (rho * surface * (self.velocity/3.6)**2)
@@ -188,14 +154,6 @@ class Aircraft(Base):
     def battery(self):
         return Battery(cap=self.battery_capacity,
                        cells=self.battery_cells)
-
-    @Part
-    def payload(self):
-        return Payload(width = self.payload_width,
-                       length = self.payload_length,
-                       height = self.payload_height,
-                       weight = self.payload.weight
-        )
 
     @Part
     def wing(self):
@@ -220,15 +178,16 @@ class Aircraft(Base):
                       motor_data=self.motor_data,
                       pos_x=0,
                       pos_y=-(self.num_engines-1)*3/4*self.prop_diameter + child.index * 3/2*self.prop_diameter,
-                      pos_z=0 if child.index != (self.num_engines-1)/2 else self.prop_diameter*3/4)
+                      pos_z=0 if child.index != (self.num_engines-1)/2 else self.prop_diameter*3/4,
+                      iteration_history=np.zeros((3,)))
 
     @Part
     def payload(self):
-        return Payload(length=0.1,
-                       width=0.1,
-                       height=0.1,
-                       weight=9.80665*2,
-                       cog_x=self.battery.cog.x-self.battery.length/2-0.06,
+        return Payload(length=self.payload_length,
+                       width=self.payload_width,
+                       height=self.payload_height,
+                       weight=9.80665*self.payload_weight,
+                       cog_x=self.battery.cog.x-self.battery.length/2-self.payload_length/2,
                        cog_y=0,
                        cog_z=0)
 
@@ -236,15 +195,123 @@ class Aircraft(Base):
     #def fuselage(self):
     #    return Fuselage()
 
+    @Part
+    def step_writer(self):
+        return STEPWriter(trees=[self], filename="Outputs/step_export.stp")
+
+    @action
+    def iterate(self):
+        any_changes = True
+
+        while any_changes:
+            print("=================================")
+            print("Total mass", self.total_weight/9.80665, " kg")
+            print("Capacity", self.battery.capacity, " Ah")
+            any_changes = False
+
+            # calculate, if the surface area of the wing has to be changed
+            required_extra_area = self.total_weight-(self.wing_surface_area*self.air_density*self.cl_required*0.5*self.velocity**2)/(self.air_density*self.cl_required*0.5*self.velocity**2)
+            if abs(required_extra_area) >= 0.1:
+                print("Change surface area")
+                any_changes = True
+                self.wing_surface_area += required_extra_area
+
+            # adjust motor selection
+            for i in range(self.num_engines):
+                change = self.engines[i].iterate
+                if change:
+                    print("Change motor")
+                any_changes = any_changes or change
+
+            # calculate, if the capacity of the battery has to be changed
+            factor_cap = self.endurance/self.endurance_time if self.endurance_mode == 'T'\
+                                                            else self.endurance/self.endurance_range
+            num_add_cells = np.ceil(self.battery.capacity * (factor_cap - 1)/self.battery.capacity_per_cell)
+            if num_add_cells != 0:
+                print("Change capacity")
+                any_changes = True
+                self.battery_capacity += num_add_cells * self.battery.capacity_per_cell
+
+            # calculate, if the voltage of the battery has to be increased
+            if self.battery_cells != self.battery_cells_required:
+                print("Change voltage")
+                any_changes = True
+                self.battery_cells = self.battery_cells_required
+
+        if not self.is_valid:
+            msg = "The iteration result found is not valid."
+            generate_warning("Iteration result invalid", msg)
+
+    @action
+    def create_prop_curve(self):
+        characteristics, _ = self.engines[0].propeller.prop_characteristics
+        v, t = characteristics[:, 0, :], self.num_engines*characteristics[:, 7, :]
+
+        plt.plot(v, t, 'b')
+        plt.plot(self.velocity, self.thrust, 'r*')
+        plt.plot([0, self.velocity, self.velocity], [self.thrust, self.thrust, 0], 'k:')
+        plt.xlabel("Velocity (km/h)")
+        plt.ylabel("Thrust (N)")
+        plt.title("Thrust over velocity of the drone")
+        plt.savefig('Outputs/prop_curves.pdf')
+        plt.close()
+
+    @action
+    def create_motor_curve(self):
+        characteristics, rpm = self.engines[0].propeller.prop_characteristics
+        v, q = characteristics[:, 0, :], characteristics[:, 6, :]
+        rpm_matrix = np.ones((characteristics.shape[0], 1)) * rpm
+
+        k_phi = self.engines[0].motor.k_phi
+        resistance = self.engines[0].motor.resistance
+        max_voltage = self.engines[0].motor.max_voltage
+
+        motor_speed = np.array([0, max_voltage/k_phi])
+        torque = (max_voltage/k_phi - motor_speed) / (resistance * 2*np.pi/k_phi**2)
+
+        plt.plot(torque, motor_speed)
+        sc = plt.scatter(q, rpm_matrix/60, s=2, c=v)
+        plt.plot(self.engines[0].propeller.torque_op, self.engines[0].propeller.rpm_op/60, "r*")
+        plt.plot([0, self.engines[0].propeller.torque_op, self.engines[0].propeller.torque_op],
+                 [self.engines[0].propeller.rpm_op/60, self.engines[0].propeller.rpm_op/60, 0], 'k:')
+        plt.colorbar(sc, label="Velocity (km/h)")
+        plt.xlabel("Motor Torque (Nm)")
+        plt.ylabel("Motor Speed (1/s)")
+        plt.title("Motor Characteristics for max. Voltage\n and Propeller Torque Requirement")
+        plt.savefig('Outputs/motor_curves.pdf')
+        plt.close()
+
+    @action
+    def velocity_sweep(self):
+        velocity = np.linspace(50, 150, 10)
+        drag = 0.05 * (velocity/3.6)**2
+        motor_speed, torque, thrust, voltage, current, op_valid = self.engines[0].variable_velocity(velocity, drag/self.num_engines)
+
+        plt.plot(velocity, motor_speed)
+        plt.xlabel("Velocity (km/h)")
+        plt.ylabel("Motor Speed (1/s)")
+        plt.title("")
+        plt.savefig('Outputs/velocity_sweep.pdf')
+        plt.close()
+
+
+
 
 if __name__ == '__main__':
-    obj = Aircraft(endurance=1,
-                   endurance_mode='T',
-                   propeller='9x4',
-                   num_engines=5,
-                   materials='wood')
+    data = pd.read_excel('Input_data.xlsx')
+    data = np.array(data)
+
+    obj = Aircraft(endurance=data[0, 1],
+                   endurance_mode=data[1, 1],
+                   velocity=data[2, 1],
+                   propeller=data[3, 1],
+                   num_engines=data[4, 1],
+                   structural_material=data[5, 1],
+                   airfoil_root=data[6, 1],
+                   airfoil_tip=data[7, 1])
 
     from parapy.gui import display
 
-    obj.iterate()
+    #obj.iterate()
+    obj.velocity_sweep()
     display(obj)

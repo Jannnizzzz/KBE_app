@@ -32,7 +32,7 @@ class Airfoil(FittedCurve):  # note the use of FittedCurve as superclass
             for line in f:
                 x, z = line.split(' ', 1)  # the cartesian coordinates are directly interpreted as X and Z coordinates
                 point_lst.append(self.position.translate(
-                    "x", float(x) * self.chord,  # the x points are scaled according to the airfoil chord length
+                    "x", -float(x) * self.chord,  # the x points are scaled according to the airfoil chord length
                     "z", float(z) * self.chord * self.thickness_factor))  # the y points are scaled according to the /
                 # thickness factor
         return point_lst

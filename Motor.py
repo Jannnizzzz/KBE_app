@@ -42,21 +42,36 @@ class Motor(Base):
     def voltage(self):
         return self.speed_op * self.k_phi + 2*np.pi * self.resistance / self.k_phi * self.torque_op
 
+    def variable_voltage(self, speed, torque):
+        return speed * self.k_phi + 2*np.pi * self.resistance / self.k_phi * torque
+
     @Attribute
     def current(self):
         return 2 * np.pi / self.k_phi * self.torque_op
+
+    def variable_current(self, torque):
+        return 2 * np.pi / self.k_phi * torque
 
     @Attribute
     def current_valid(self):
         return self.current <= self.max_current
 
+    def variable_current_valid(self, torque):
+        return self.variable_current(torque) <= self.max_current
+
     @Attribute
     def voltage_valid(self):
         return self.voltage <= self.parent.parent.battery.voltage
 
+    def variable_voltage_valid(self, speed, torque):
+        return self.variable_voltage(speed, torque) <= self.parent.parent.battery.voltage
+
     @Attribute
     def is_valid(self):
         return self.current_valid and self.voltage_valid
+
+    def variable_valid(self, speed, torque):
+        return self.variable_current_valid(torque) and self.variable_voltage_valid(speed, torque)
 
     @Attribute
     def voltages(self):
@@ -94,5 +109,6 @@ class Motor(Base):
     @Part(parse=False)
     def body(self):
         return Cylinder(self.diameter/2, self.length,
+                        color="gray",
                         centered=True,
                         position=Position(self.cog, Orientation(x='y', y='z')))

@@ -4,6 +4,7 @@ from parapy.core.validate import IsInstance
 from parapy.geom import Box
 from parapy.geom.generic.positioning import Position, Point, Orientation
 import math
+import numpy as np
 
 class Battery(Base):
     cap = Input()                   # in Ah
@@ -15,17 +16,23 @@ class Battery(Base):
     cell_height = Input(65)         # in mm
     cog = Input(Point(0, 0, 0), validator=IsInstance(Point))
 
+    # calculate batteries width based on the payloads width
     @Attribute
     def width(self):
-        return self.cell_diameter * self.cells / 1000
+        return self.cell_diameter / 1000 * np.round(self.parent.payload.width / (self.cell_diameter / 1000))
 
+    # fit batteries length based on width and height as well as number of single cells needed
     @Attribute
     def length(self):
-        return self.cell_diameter * self.num_cells/self.cells / 1000
+        cells_height = np.round(self.parent.payload.height / (self.cell_height / 1000))
+        cells_width = np.round(self.parent.payload.width / (self.cell_diameter / 1000))
+        cells_length = np.ceil(self.num_cells / (cells_width * cells_height))
+        return self.cell_diameter / 1000 * cells_length
 
+    # calculate batteries height based on the payloads height
     @Attribute
     def height(self):
-        return self.cell_height / 1000
+        return self.cell_height / 1000 * np.round(self.parent.payload.height / (self.cell_height / 1000))
 
     @Attribute
     def num_cells(self):
@@ -46,5 +53,6 @@ class Battery(Base):
     @Part
     def body(self):
         return Box(self.length, self.width, self.height,
+                   color="red",
                    centered=True,
                    position=Position(self.cog, Orientation(x='-x', y='y')))

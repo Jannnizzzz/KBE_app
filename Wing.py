@@ -18,12 +18,12 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
     airfoil_root    = Input("whitcomb.dat")
     airfoil_tip     = Input("simm_airfoil.dat")  #: :type: string
 
-    w_c_root        = Input(3)
-    w_c_tip         = Input(1)
+    w_c_root        = Input(0.5)
+    w_c_tip         = Input(0.3)
     t_factor_root   = Input(0.1)
     t_factor_tip    = Input(0.1)
 
-    w_semi_span     = Input(10)
+    w_semi_span     = Input(1.5)
     sweep           = Input(5)
     twist           = Input(2)
     incidence       = Input(3)
@@ -65,7 +65,7 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
                        position=translate(
                            rotate(self.position, "y", radians(self.twist)),  # apply twist angle
                            "y", self.w_semi_span,
-                           "x", self.w_semi_span * tan(radians(self.sweep))),  # apply sweep
+                           "x", self.w_semi_span * tan(radians(-self.sweep))),  # apply sweep
                        mesh_deflection=0.0001)
 
     @Part
