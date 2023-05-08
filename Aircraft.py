@@ -1,5 +1,6 @@
 
 from parapy.core import *
+from parapy.exchange import STEPWriter
 from parapy.geom.generic.positioning import Point
 from Wing import Semiwing
 from Battery import Battery
@@ -182,14 +183,18 @@ class Aircraft(Base):
     #def fuselage(self):
     #    return Fuselage()
 
+    @Part
+    def step_writer(self):
+        return STEPWriter(trees=[self], filename="Outputs/step_export.stp")
+
     @action
     def iterate(self):
         any_changes = True
 
         while any_changes:
             print("=================================")
-            print("Total weight", self.total_weight/9.80665)
-            print("Capacity", self.battery.capacity)
+            print("Total mass", self.total_weight/9.80665, " kg")
+            print("Capacity", self.battery.capacity, " Ah")
             any_changes = False
 
             # adjust motor selection
