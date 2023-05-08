@@ -110,5 +110,6 @@ class Propeller(Base):
     @Part
     def body(self):
         return Cylinder(self.prop_diameter/2, .01,
+                        color="gray",
                         position=Position(self.position, Orientation(x='y', y='z')),
                         transparency=0.8)

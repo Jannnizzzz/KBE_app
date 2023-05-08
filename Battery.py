@@ -53,5 +53,6 @@ class Battery(Base):
     @Part
     def body(self):
         return Box(self.length, self.width, self.height,
+                   color="red",
                    centered=True,
                    position=Position(self.cog, Orientation(x='-x', y='y')))
