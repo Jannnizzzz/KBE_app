@@ -5,13 +5,13 @@ from parapy.core import *
 from Airfoil import *
 from math import *
 import matlab.engine
-#from Q3D import MATLAB_Q3D_ENGINE
+from _init_ import MATLAB_Q3D_ENGINE
 from kbeutils import *
 from typing import Dict
 from matlab import *
 
 # initialise MATLAB engine
-MATLAB_Q3D_ENGINE = matlab.engine.start_matlab()
+#MATLAB_Q3D_ENGINE = matlab.engine.start_matlab()
 
 
 class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
@@ -85,10 +85,6 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
     @Attribute
     def run_q3d(self):
         """Run Q3D (MATLAB) and get back all results and input"""
-
-        # change matlab root directory to Q3D, so it can find the function
-        MATLAB_Q3D_ENGINE.cd(r'Q3D')
-
         root_data = self.root_airfoil.yt_xl_xu
         tip_data = self.tip_airfoil.yt_xl_xu
         visc_option = self.visc_option
