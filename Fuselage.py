@@ -14,41 +14,52 @@ class Fuselage(GeomBase):
     def payload_section_radius(self):
         return(1.1*sqrt(0.5*self.parent.payload.height**2+0.5*self.parent.payload.width**2))
 
-    @Attribute
-    def battery_section_radius(self):
-        return(1.1*sqrt(0.5*self.parent.battery.height**2+0.5*self.parent.battery.width**2))
+    #@Attribute
+    #def battery_section_radius(self):
+    #    return(1.1*sqrt(0.5*self.parent.battery.height**2+0.5*self.parent.battery.width**2))
 
     @Attribute
     def nose_radius(self):
-        return(0.2 * self.battery_section_radius)
+        return(0.2 * self.payload_section_radius)
 
-    @Attribute
-    def aft_fuselage_radius(self):
-        return(self.payload_section_radius)
+    #@Attribute
+    #def tail_radius(self):
+    #    return(self.payload_section_radius)
 
     @Attribute
     def tail_radius(self):
-        return(0.2*self.payload_section_radius)
+        return(0.25*self.payload_section_radius)
+
+    @Attribute
+    def payload_section_length(self):
+        return(3*(self.parent.payload.length + self.parent.battery.length))
 
     @Attribute
     def nose_length(self):
-        return(0.2*self.parent.battery.length)
-
-    @Attribute
-    def aft_fuselage_length(self):
-        return(self.parent.battery.length+self.parent.payload.length*1.2)
+        return(2.5*self.payload_section_radius)
 
     @Attribute
     def tail_length(self):
-        return(0.2*self.aft_fuselage_length)
+        return(6.0*self.payload_section_radius)
+
+    #@Attribute
+    #def tail_length(self):
+    #    return(0.2*self.aft_fuselage_length)
     @Input
     def section_radii(self):
-       return[self.nose_radius, self.battery_section_radius, self.payload_section_radius, self.aft_fuselage_radius,
-              self.tail_radius]
+       return[self.nose_radius, self.payload_section_radius,self.payload_section_radius, self.tail_radius]
 
     @Input
     def section_lengths(self):
-        return[self.nose_length, self.parent.battery.length, self.parent.payload.length, self.aft_fuselage_length, self.tail_length]
+        return[self.nose_length, self.payload_section_length,self.payload_section_length,  self.tail_length]
+
+    @Attribute
+    def fuselage_length(self):
+        return(self.nose_length+self.payload_section_length+self.tail_length)
+
+    @Attribute
+    def fuselage_radius(self):
+        return self.payload_section_radius
 
  #   @Attribute
  #   def section_radius(self):
@@ -76,6 +87,10 @@ class Fuselage(GeomBase):
         """
         return self.profile_set  # collect the elements of the sequence profile_set
 
+    @Attribute
+    def x_nose(self):
+        return self.nose_length+self.parent.battery.length/2 + self.parent.battery.cog.x
+
     @Part
     def profile_set(self):
         return Circle(
@@ -86,34 +101,34 @@ class Fuselage(GeomBase):
                 self.position.rotate90('y'),  # circles are in XY plane, thus need rotation
                 Vector(1, 0, 0),
                 #child.index * self.section_lengths
-                sum(self.section_lengths[:child.index])
+                self.x_nose-sum(self.section_lengths[:child.index])
             )
         )
 
-    @Part
-    def fuselage_lofted(self):
-        """This part is redundant as far as LoftedSolid is a Fuselage's
-        superclass.
-        """
-        return LoftedSolid(
-            profiles=self.profile_set,
-            color="red",
-            mesh_deflection=0.0001,
-            hidden=False
-        )
-
-    @Part
-    def fuselage_lofted_ruled(self):
-        """This part is redundant as far as LoftedSolid is a Fuselage's
-        superclass.
-        """
-        return LoftedSolid(
-            profiles=self.profile_set,
-            color="green",
-            ruled=True,  # by default this is set to False
-            mesh_deflection=0.0001,
-            hidden=False
-        )
+    # @Part
+    # def fuselage_lofted(self):
+    #     """This part is redundant as far as LoftedSolid is a Fuselage's
+    #     superclass.
+    #     """
+    #     return LoftedSolid(
+    #         profiles=self.profile_set,
+    #         color="red",
+    #         mesh_deflection=0.0001,
+    #         hidden=False
+    #     )
+    #
+    # @Part
+    # def fuselage_lofted_ruled(self):
+    #     """This part is redundant as far as LoftedSolid is a Fuselage's
+    #     superclass.
+    #     """
+    #     return LoftedSolid(
+    #         profiles=self.profile_set,
+    #         color="green",
+    #         ruled=True,  # by default this is set to False
+    #         mesh_deflection=0.0001,
+    #         hidden=False
+    #     )
 
     @Part
     def fuselage_lofted_surf(self):

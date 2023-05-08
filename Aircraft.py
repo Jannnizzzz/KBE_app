@@ -1,53 +1,90 @@
-
 from parapy.core import *
 from parapy.exchange import STEPWriter
 from parapy.geom.generic.positioning import Point
+from parapy.geom import *
 from Wing import Semiwing
 from Battery import Battery
 from Engine import Engine
 from Payload import Payload
 from __init__ import generate_warning
 from Fuselage import Fuselage
+from math import *
 
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 
-class Aircraft(Base):
+class Aircraft(GeomBase):
     # main input parameters
-    endurance = Input()             # endurance time (in h) or range (in km) for design
-    endurance_mode = Input()        # either 'T' for time or 'R' for range
-    velocity = Input()              # design velocity (in km/h)
-    propeller = Input()             # propeller used (format 'DxH', in inch)
-    num_engines = Input()           # number of separate engines (propeller-motor-pair)
-    structural_material = Input()
-    airfoil_root = Input()          # name of the airfoil of the wings root
-    airfoil_tip = Input()           # name of the airfoil of the wings root
+    endurance = Input()  # endurance time (in h) or range (in km) for design
+    endurance_mode = Input()  # either 'T' for time or 'R' for range
+    velocity = Input()  # design velocity (in km/h)
+    propeller = Input()  # propeller used (format 'DxH', in inch)
+    num_engines = Input()  # number of separate engines (propeller-motor-pair)
+    structural_material = Input()  # type of material to be used for the structural part
 
     # maximum dimensions of the drone
-    max_width = Input(3)            # maximum wing span (in m)
-    max_length = Input(3)           # maximum length (in m)
-    max_height = Input(0.2)         # maximum height (in m)
+    max_width = Input(3)  # maximum wing span (in m)
+    max_length = Input(3)  # maximum length (in m)
+    max_height = Input(0.2)  # maximum height (in m)
 
     # payload dimensions
-    payload_width   = Input(0.2)    # in m
-    payload_length  = Input(0.5)    # in m
-    payload_height  = Input(0.2)    # in m
-    payload_weight  = Input(2.0)    # in kg
+    payload_width = Input(0.2)  # in m
+    payload_length = Input(0.5)  # in m
+    payload_height = Input(0.2)  # in m
+    payload_weight = Input(2.0)  # in kg
 
-    wing_surface_area   = 1         #dummy value
-    tail_cl     = 0.0               #as it should be symmetric
+    # fuselage dimensions
 
+    # wing dimensions & parameters
+
+    wing_surface_area = 1  # dummy value
+    tail_cl = 0.0  #
+    airfoil_root = Input()  # name of the airfoil of the wings root
+    airfoil_tip = Input()  # name of the airfoil of the wings root
+    w_c_root = Input(0.5)
+    w_c_tip = Input(0.3)
+    t_factor_root = Input(1.0)
+    t_factor_tip = Input(1.0)
+
+    w_semi_span = Input(1.5)
+    sweep = Input(5)
+    twist = Input(2)
+    incidence = Input(3)
+
+    dynamic_viscosity = Input(1.8 * 10 ** (-5))
     air_density = Input(1.225)
+
+    # tail section parameters
+
+    horizontal_tail_airfoil_root    = Input("whitcomb")
+    horizontal_tail_airfoil_tip    = Input("whitcomb")
+
+    vertical_tail_airfoil_root    = Input("whitcomb")
+    vertical_tail_airfoil_tip    = Input("whitcomb")
+
+    #:
+    wing_dihedral: float = Input(3)
+
+    #: longitudinal position w.r.t. fuselage length. (% of fus length)
+    wing_position_fraction_long: float = Input(0.3)
+
+    #: vertical position w.r.t. to fus  (% of fus radius)
+    wing_position_fraction_vrt: float = Input(0.8)
+
+    #: longitudinal position of the vertical tail, as % of fus length
+    vt_long: float = Input(0.6)
+
+    #:
+    vt_taper: float = Input(0.4)
 
     # battery parameters (initial value, to be changed during iteration)
     battery_capacity = Input(1)
     battery_cells = Input(3)
 
-    #__initargs__ = "endurance, endurance_mode, velocity, propeller, num_engines"# , structural_material, " \
-                   # + "airfoil_root, airfoil_tip"
-
+    # __initargs__ = "endurance, endurance_mode, velocity, propeller, num_engines"# , structural_material, " \
+    # + "airfoil_root, airfoil_tip"
 
     @Attribute
     def time_requirement(self):
@@ -61,7 +98,7 @@ class Aircraft(Base):
     @Input
     def prop_inclination(self):
         split = self.propeller.index('x')
-        return int(self.propeller[split+1:])
+        return int(self.propeller[split + 1:])
 
     @Attribute
     def is_valid(self):
@@ -81,8 +118,7 @@ class Aircraft(Base):
 
     @Attribute
     def cl_required(self):
-        return self.total_weight/(self.wing_surface_area*0.5*self.air_density*self.velocity**2)
-
+        return self.total_weight / (self.wing_surface_area * 0.5 * self.air_density * self.velocity ** 2)
 
     @Attribute
     def cog(self):
@@ -104,7 +140,6 @@ class Aircraft(Base):
             cog_y += self.engines[i].cog.y * self.engines[i].weight
             cog_z += self.engines[i].cog.z * self.engines[i].weight
 
-
         # final COG calculation
         cog_x /= self.total_weight
         cog_y /= self.total_weight
@@ -120,11 +155,11 @@ class Aircraft(Base):
 
     @Attribute
     def endurance_time(self):
-        return self.battery.capacity/self.total_current
+        return self.battery.capacity / self.total_current
 
     @Attribute
     def endurance_range(self):
-        return self.velocity*self.endurance_time
+        return self.velocity * self.endurance_time
 
     @Attribute
     def battery_cells_required(self):
@@ -142,13 +177,13 @@ class Aircraft(Base):
 
     @Attribute
     def thrust(self):
-        surface = self.total_weight/55
+        surface = self.total_weight / 55
         rho = 1.225
         cD0 = .02
-        k = 1 / (np.pi * surface/self.max_width**2 * .8)
+        k = 1 / (np.pi * surface / self.max_width ** 2 * .8)
 
-        return 0.5 * rho * surface * cD0 * (self.velocity/3.6)**2 \
-            + 2 * self.total_weight**2 * k / (rho * surface * (self.velocity/3.6)**2)
+        return 0.5 * rho * surface * cD0 * (self.velocity / 3.6) ** 2 \
+               + 2 * self.total_weight ** 2 * k / (rho * surface * (self.velocity / 3.6) ** 2)
 
     @Part
     def battery(self):
@@ -156,29 +191,47 @@ class Aircraft(Base):
                        cells=self.battery_cells)
 
     @Part
-    def wing(self):
-        return Semiwing()
+    def fuselage(self):
+        return Fuselage(position= translate
+                                        (self.position, "x",
+                                         self.fuselage.payload_section_length/2,
+
+                        ))
 
     @Part
-    def fuselage(self):
-        return Fuselage()
+    def rectangle(self):
+        return Rectangle(width=0.1 * self.w_c_root,
+                         length=2 * child.width,
+                         position=translate(
+                             rotate90(self.position, 'y'),
+                             # self.right_wing.position,
+                             'x',
+                             self.fuselage.payload_section_length,
+                             #'z', child.length * self.dist),
 
-    #@Part
-    #def tail(self):
-    #    return Tail()
+                         #hidden=True
+                                  ))
+
+    @Part
+    def payload_door(self):  # only one result is visualized, although more wires can result from the operation
+        return ProjectedCurve(source=self.rectangle,  # source
+                              target=self.fuselage,  # target
+                              direction=self.position.Vz)
+
 
     @Part
     def engines(self):
         return Engine(quantify=self.num_engines,
                       prop=self.propeller,
                       velocity_op=self.velocity,
-                      thrust_op=self.thrust/self.num_engines,
+                      thrust_op=self.thrust / self.num_engines,
                       max_voltage=self.battery.voltage,
                       voltage_per_cell=self.battery.voltage_per_cell,
                       motor_data=self.motor_data,
                       pos_x=0,
-                      pos_y=-(self.num_engines-1)*3/4*self.prop_diameter + child.index * 3/2*self.prop_diameter,
-                      pos_z=0 if child.index != (self.num_engines-1)/2 else self.prop_diameter*3/4,
+                      pos_y=-(
+                                  self.num_engines - 1) * 3 / 4 * self.prop_diameter + child.index * 3 / 2 * self.prop_diameter,
+                      pos_z=0 if child.index != (self.num_engines - 1) / 2 else self.prop_diameter * 3 / 4,
                       iteration_history=np.zeros((3,)))
 
     @Part
@@ -186,14 +239,112 @@ class Aircraft(Base):
         return Payload(length=self.payload_length,
                        width=self.payload_width,
                        height=self.payload_height,
-                       weight=9.80665*self.payload_weight,
-                       cog_x=self.battery.cog.x-self.battery.length/2-self.payload_length/2,
+                       weight=9.80665 * self.payload_weight,
+                       cog_x=self.battery.cog.x - self.battery.length / 2 - self.payload_length / 2,
                        cog_y=0,
                        cog_z=0)
 
-    #@Part
-    #def fuselage(self):
-    #    return Fuselage()
+    @Part
+    def right_wing(self):
+        return Semiwing(airfoil_root=self.airfoil_root,
+                        airfoil_tip=self.airfoil_tip,
+                        w_c_root=self.w_c_root,
+                        w_c_tip=self.w_c_tip,
+                        t_factor_root=self.t_factor_root,
+                        t_factor_tip=self.t_factor_tip,
+
+                        w_semi_span=self.w_semi_span,
+                        sweep=self.sweep,
+                        twist=self.twist,
+                        incidence=self.incidence,
+
+                        dynamic_viscosity=self.dynamic_viscosity,
+                        air_density=self.air_density,
+                        velocity=self.velocity,
+
+                        cl=self.cl_required,
+
+                        visc_option=Input(1),
+
+                        #position=rotate(
+                        #                "x",
+                        #                radians(self.wing_dihedral + 5)),
+                        )
+
+
+    @Part
+    def left_wing(self):
+        return MirroredShape(shape_in=self.right_wing,
+                             reference_point=self.position,
+                             # Two vectors to define the mirror plane
+                             vector1=self.position.Vz,
+                             vector2=self.position.Vx,
+                             mesh_deflection=0.0001)
+
+    @Part
+    def tail_right_wing(self):
+        return Semiwing(airfoil_root=self.airfoil_root,
+                        airfoil_tip=self.airfoil_tip,
+                        w_c_root=self.w_c_root,
+                        t_factor_root=self.t_factor_root,
+                        t_factor_tip=self.t_factor_tip,
+
+                        w_semi_span=self.w_semi_span,
+                        twist=self.twist,
+                        incidence=self.incidence,
+
+                        dynamic_viscosity=self.dynamic_viscosity,
+                        air_density=self.air_density,
+                        velocity=self.velocity,
+
+                        cl=self.cl_required,
+
+                        visc_option=Input(1),
+
+                        position=rotate(translate
+                                        (self.position, "x",
+                                          -self.vt_long * self.fuselage.fuselage_length),
+                                        "x",
+                                        radians(self.wing_dihedral + 5)),
+                        )
+
+    @Part
+    def tail_left_wing(self):
+        return MirroredShape(shape_in=self.tail_right_wing,
+                             reference_point=self.position,
+                             # Two vectors to define the mirror plane
+                             vector1=self.position.Vz,
+                             vector2=self.position.Vx,
+                             mesh_deflection=0.0001)
+
+    @Part
+    def vertical_tail(self):
+        return Semiwing(airfoil_root=self.airfoil_root,
+                        airfoil_tip=self.airfoil_tip,
+                        w_c_root=self.w_c_root,
+                        t_factor_root=self.t_factor_root,
+                        t_factor_tip=self.t_factor_tip,
+
+                        w_semi_span=self.w_semi_span,
+                        sweep=self.sweep,
+                        twist=self.twist,
+                        incidence=self.incidence,
+
+                        dynamic_viscosity=self.dynamic_viscosity,
+                        air_density=self.air_density,
+                        velocity=self.velocity,
+
+                        cl=self.cl_required,
+
+                        visc_option=Input(1),
+
+                        position=rotate(translate
+                                        (self.position,
+                                         "x", -self.vt_long * self.fuselage.fuselage_length,
+                                         "z", self.fuselage.tail_radius * 0.7),
+                                        "x",
+                                        radians(90)),
+                        )
 
     @Part
     def step_writer(self):
@@ -205,12 +356,14 @@ class Aircraft(Base):
 
         while any_changes:
             print("=================================")
-            print("Total mass", self.total_weight/9.80665, " kg")
+            print("Total mass", self.total_weight / 9.80665, " kg")
             print("Capacity", self.battery.capacity, " Ah")
             any_changes = False
 
             # calculate, if the surface area of the wing has to be changed
-            required_extra_area = self.total_weight-(self.wing_surface_area*self.air_density*self.cl_required*0.5*self.velocity**2)/(self.air_density*self.cl_required*0.5*self.velocity**2)
+            required_extra_area = self.total_weight - (
+                        self.wing_surface_area * self.air_density * self.cl_required * 0.5 * self.velocity ** 2) / (
+                                              self.air_density * self.cl_required * 0.5 * self.velocity ** 2)
             if abs(required_extra_area) >= 0.1:
                 print("Change surface area")
                 any_changes = True
@@ -224,9 +377,9 @@ class Aircraft(Base):
                 any_changes = any_changes or change
 
             # calculate, if the capacity of the battery has to be changed
-            factor_cap = self.endurance/self.endurance_time if self.endurance_mode == 'T'\
-                                                            else self.endurance/self.endurance_range
-            num_add_cells = np.ceil(self.battery.capacity * (factor_cap - 1)/self.battery.capacity_per_cell)
+            factor_cap = self.endurance / self.endurance_time if self.endurance_mode == 'T' \
+                else self.endurance / self.endurance_range
+            num_add_cells = np.ceil(self.battery.capacity * (factor_cap - 1) / self.battery.capacity_per_cell)
             if num_add_cells != 0:
                 print("Change capacity")
                 any_changes = True
@@ -245,7 +398,7 @@ class Aircraft(Base):
     @action
     def create_prop_curve(self):
         characteristics, _ = self.engines[0].propeller.prop_characteristics
-        v, t = characteristics[:, 0, :], self.num_engines*characteristics[:, 7, :]
+        v, t = characteristics[:, 0, :], self.num_engines * characteristics[:, 7, :]
 
         plt.plot(v, t, 'b')
         plt.plot(self.velocity, self.thrust, 'r*')
@@ -266,14 +419,14 @@ class Aircraft(Base):
         resistance = self.engines[0].motor.resistance
         max_voltage = self.engines[0].motor.max_voltage
 
-        motor_speed = np.array([0, max_voltage/k_phi])
-        torque = (max_voltage/k_phi - motor_speed) / (resistance * 2*np.pi/k_phi**2)
+        motor_speed = np.array([0, max_voltage / k_phi])
+        torque = (max_voltage / k_phi - motor_speed) / (resistance * 2 * np.pi / k_phi ** 2)
 
         plt.plot(torque, motor_speed)
-        sc = plt.scatter(q, rpm_matrix/60, s=2, c=v)
-        plt.plot(self.engines[0].propeller.torque_op, self.engines[0].propeller.rpm_op/60, "r*")
+        sc = plt.scatter(q, rpm_matrix / 60, s=2, c=v)
+        plt.plot(self.engines[0].propeller.torque_op, self.engines[0].propeller.rpm_op / 60, "r*")
         plt.plot([0, self.engines[0].propeller.torque_op, self.engines[0].propeller.torque_op],
-                 [self.engines[0].propeller.rpm_op/60, self.engines[0].propeller.rpm_op/60, 0], 'k:')
+                 [self.engines[0].propeller.rpm_op / 60, self.engines[0].propeller.rpm_op / 60, 0], 'k:')
         plt.colorbar(sc, label="Velocity (km/h)")
         plt.xlabel("Motor Torque (Nm)")
         plt.ylabel("Motor Speed (1/s)")
@@ -284,8 +437,9 @@ class Aircraft(Base):
     @action
     def velocity_sweep(self):
         velocity = np.linspace(50, 150, 10)
-        drag = 0.05 * (velocity/3.6)**2
-        motor_speed, torque, thrust, voltage, current, op_valid = self.engines[0].variable_velocity(velocity, drag/self.num_engines)
+        drag = 0.05 * (velocity / 3.6) ** 2
+        motor_speed, torque, thrust, voltage, current, op_valid = self.engines[0].variable_velocity(velocity,
+                                                                                                    drag / self.num_engines)
 
         plt.plot(velocity, motor_speed)
         plt.xlabel("Velocity (km/h)")
@@ -293,8 +447,6 @@ class Aircraft(Base):
         plt.title("")
         plt.savefig('Outputs/velocity_sweep.pdf')
         plt.close()
-
-
 
 
 if __name__ == '__main__':
@@ -312,6 +464,6 @@ if __name__ == '__main__':
 
     from parapy.gui import display
 
-    #obj.iterate()
+    # obj.iterate()
     obj.velocity_sweep()
     display(obj)

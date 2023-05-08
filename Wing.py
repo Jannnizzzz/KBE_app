@@ -81,6 +81,10 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
     def reynolds_number(self):
         return[self.air_density*self.velocity*self.mean_aerodynamic_chord/self.dynamic_viscosity]
 
+    @Attribute
+    def wing_area(self):
+        return(0.5*(self.w_c_root+self.w_c_tip)*self.w_semi_span)
+
 
     @Attribute
     def run_q3d(self):
