@@ -1,4 +1,4 @@
-function [Res, AC] = run_q3d(wing_planform_geom, wing_incidence_angle, visc_option,  root_data, tip_data,air_density, velocity, reynolds_number,cl)
+function [Res, AC] = run_q3d(wing_planform_geom, wing_incidence_angle, visc_option,  root_cst, tip_cst,air_density, velocity, reynolds_number,cl)
 
    % Wing planform geometry
    %                x    y     z   chord(m)    twist angle (deg)
@@ -10,8 +10,8 @@ function [Res, AC] = run_q3d(wing_planform_geom, wing_incidence_angle, visc_opti
 %    AC.Wing.inc  = 0;
      AC.Wing.inc  = wing_incidence_angle;
 
-    root_cst = demo(root_data);
-    tip_cst  = demo(tip_data);
+    %root_cst = demo(root_data);
+    %tip_cst  = demo(tip_data);
    % Airfoil coefficients input matrix
    %                    | ->     upper curve coeff.                <-|   | ->       lower curve coeff.       <-|
    %AC.Wing.Airfoils   = [0.2171    0.3450    0.2975    0.2685    0.2893  -0.1299   -0.2388   -0.1635   -0.0476    0.0797;
