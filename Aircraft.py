@@ -59,7 +59,7 @@ class Aircraft(Base):
         return int(self.propeller[:split]) * 0.0254
 
     @Input
-    def prop_inclination(self):
+    def prop_pitch(self):
         split = self.propeller.index('x')
         return int(self.propeller[split+1:])
 
@@ -150,6 +150,32 @@ class Aircraft(Base):
         return 0.5 * rho * surface * cD0 * (self.velocity/3.6)**2 \
             + 2 * self.total_weight**2 * k / (rho * surface * (self.velocity/3.6)**2)
 
+    @Attribute
+    def motor_y_positions(self):
+        y_pos = np.zeros((self.num_engines,))
+        fuselage_radius = max(self.fuselage.battery_section_radius, self.fuselage.payload_section_radius)
+
+        if self.num_engines % 2 == 1:
+            middle_index = int((self.num_engines-1)/2)
+            y_pos[middle_index] = 0
+
+            y_pos[middle_index + 1] = max(fuselage_radius + 3/4*self.prop_diameter, 3/2*self.prop_diameter)
+            y_pos[middle_index - 1] = -max(fuselage_radius + 3/4*self.prop_diameter, 3/2*self.prop_diameter)
+            for i in range(2, self.num_engines - middle_index):
+                y_pos[middle_index + i] = y_pos[middle_index + i - 1] + 3/2*self.prop_diameter
+                y_pos[middle_index - i] = y_pos[middle_index - i + 1] - 3/2*self.prop_diameter
+
+        else:
+            halve_point = int(self.num_engines/2)
+            y_pos[halve_point] = max(fuselage_radius + 3/4*self.prop_diameter, 3/4*self.prop_diameter)
+            y_pos[halve_point-1] = -max(fuselage_radius + 3/4*self.prop_diameter, 3/4*self.prop_diameter)
+
+            for i in range(1, halve_point):
+                y_pos[halve_point + i] = y_pos[halve_point + i - 1] + 3/2*self.prop_diameter
+                y_pos[halve_point - i - 1] = y_pos[halve_point + i - 2] - 3/2*self.prop_diameter
+
+        return y_pos
+
     @Part
     def battery(self):
         return Battery(cap=self.battery_capacity,
@@ -176,9 +202,11 @@ class Aircraft(Base):
                       max_voltage=self.battery.voltage,
                       voltage_per_cell=self.battery.voltage_per_cell,
                       motor_data=self.motor_data,
-                      pos_x=0,
-                      pos_y=-(self.num_engines-1)*3/4*self.prop_diameter + child.index * 3/2*self.prop_diameter,
-                      pos_z=0 if child.index != (self.num_engines-1)/2 else self.prop_diameter*3/4,
+                      pos_x=np.sign((self.num_engines-1)/2 - child.index) * np.tan(np.radians(self.wing.sweep))
+                            * self.motor_y_positions[child.index],
+                      pos_y=self.motor_y_positions[child.index],
+                      pos_z=0 if child.index != (self.num_engines-1)/2
+                              else self.fuselage.battery_section_radius + self.prop_diameter*3/4,
                       iteration_history=np.zeros((3,)))
 
     @Part
@@ -197,7 +225,7 @@ class Aircraft(Base):
 
     @Part
     def step_writer(self):
-        return STEPWriter(trees=[self], filename="Outputs/step_export.stp")
+        return STEPWriter(trees=[self], filename="Outputs/step_export.stp", unit="M")
 
     @action
     def iterate(self):
