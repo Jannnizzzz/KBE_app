@@ -203,10 +203,11 @@ class Aircraft(Base):
                       voltage_per_cell=self.battery.voltage_per_cell,
                       motor_data=self.motor_data,
                       pos_x=np.sign((self.num_engines-1)/2 - child.index) * np.tan(np.radians(self.wing.sweep))
-                            * self.motor_y_positions[child.index],
+                            * self.motor_y_positions[child.index] if child.index != (self.num_engines-1)/2
+                            else self.fuselage.profile_set[0].location.x,
                       pos_y=self.motor_y_positions[child.index],
                       pos_z=0 if child.index != (self.num_engines-1)/2
-                              else self.fuselage.battery_section_radius + self.prop_diameter*3/4,
+                              else self.fuselage.profile_set[0].location.z,
                       iteration_history=np.zeros((3,)))
 
     @Part
