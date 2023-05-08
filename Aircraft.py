@@ -362,6 +362,20 @@ class Aircraft(Base):
         plt.savefig('Outputs/velocity_sweep.pdf')
         plt.close(fig)
 
+    @action
+    def export_parameters(self):
+        columns = ['Value', 'Unit']
+        index = ['Endurance', 'Endurance Mode', 'Velocity', 'Propeller', '# Engines', 'Material', 'Airfoil Root',
+                'Airfoil Tip', 'Battery Capacity', 'Battery Cells', 'Motor Name']
+        values = np.array([self.endurance, self.endurance_mode, self.velocity, self.propeller, self.num_engines,
+                  self.structural_material, self.wing.airfoil_root, self.wing.airfoil_tip, self.battery.capacity,
+                  self.battery.cells, self.motor_data[self.engines[0].motor.motor_idx, 0]])
+        units = np.array(['h' if values[1] == 'T' else 'km', np.nan, 'km/h', np.nan, np.nan, np.nan, np.nan, np.nan,
+                 'Ah', np.nan, np.nan])
+
+        df = pd.DataFrame(np.vstack((values, units)).T, index=index, columns=columns)
+        df.to_excel('Outputs/parameters.xlsx')
+
 
 
 
@@ -381,5 +395,4 @@ if __name__ == '__main__':
     from parapy.gui import display
 
     #obj.iterate()
-    obj.velocity_sweep()
     display(obj)
