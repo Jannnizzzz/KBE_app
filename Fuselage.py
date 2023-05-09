@@ -12,7 +12,7 @@ class Fuselage(GeomBase):
 
     @Attribute
     def payload_section_radius(self):
-        return(1.1*sqrt(0.5*self.parent.payload.height**2+0.5*self.parent.payload.width**2))
+        return(sqrt(0.5*self.parent.payload.height**2+0.5*self.parent.payload.width**2))
 
     #@Attribute
     #def battery_section_radius(self):

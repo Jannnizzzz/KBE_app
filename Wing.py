@@ -18,8 +18,9 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
     airfoil_root    = Input("whitcomb.dat")
     airfoil_tip     = Input("simm_airfoil.dat")  #: :type: string
 
-    w_c_root        = Input(0.5)
-    w_c_tip         = Input(0.3)
+    #w_c_root        = Input(0.5)
+    #w_c_tip         = Input(0.3)
+    wing_surface_area = Input()
     t_factor_root   = Input(0.1)
     t_factor_tip    = Input(0.1)
 
@@ -37,9 +38,22 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
     visc_option         = Input(1) #0 for inviscid, 1 for viscous
 
 
+
+   # @Attribute
+   # def taper_ratio(self):
+   #     return(self.w_c_tip/self.w_c_root)
+
     @Attribute
     def taper_ratio(self):
-        return(self.w_c_tip/self.w_c_root)
+        return(0.2*(2-self.sweep*pi/180))
+
+    @Attribute
+    def w_c_root(self):
+        return(2*self.wing_surface_area/((1+self.taper_ratio)*self.w_semi_span))
+
+    @Attribute
+    def w_c_tip(self):
+        return(self.taper_ratio*self.w_c_root)
 
     @Attribute
     def mean_aerodynamic_chord(self):

@@ -39,12 +39,15 @@ class Aircraft(GeomBase):
 
     # wing dimensions & parameters
 
-    wing_surface_area = 1  # dummy value
-    tail_cl = 0.0  #
+
+    max_cl          = Input(1.5)
+    stall_speed     = Input(40)                        #stall speed in km/h
+    #wing_surface_area = Input(1)  # dummy value
+    n_ult           = Input(3.0)
     airfoil_root = Input()  # name of the airfoil of the wings root
     airfoil_tip = Input()  # name of the airfoil of the wings root
-    w_c_root = Input(0.5)
-    w_c_tip = Input(0.3)
+    #w_c_root = Input(0.5)
+    #w_c_tip = Input(0.3)
     t_factor_root = Input(1.0)
     t_factor_tip = Input(1.0)
 
@@ -56,13 +59,37 @@ class Aircraft(GeomBase):
     dynamic_viscosity = Input(1.8 * 10 ** (-5))
     air_density = Input(1.225)
 
-    # tail section parameters
+    # horizontal tail section parameters
+
+    tail_cl = Input(0.0)  #
+
+    horizontal_tail_volume = Input(0.4)
 
     horizontal_tail_airfoil_root    = Input("whitcomb")
     horizontal_tail_airfoil_tip    = Input("whitcomb")
 
+    horizontal_tail_t_factor_root = Input(1.0)
+    horizontal_tail_t_factor_tip = Input(1.0)
+
+    horizontal_tail_w_semi_span = Input(0.5)
+    horizontal_tail_sweep = Input(10)
+    horizontal_tail_twist = Input(2)
+    horizontal_tail_incidence = Input(3)
+
+    # vertical tail section parameters
+
+    vertical_tail_volume = Input(0.4)
+
     vertical_tail_airfoil_root    = Input("whitcomb")
     vertical_tail_airfoil_tip    = Input("whitcomb")
+
+    vertical_tail_t_factor_root = Input(1.0)
+    vertical_tail_t_factor_tip = Input(1.0)
+
+    vertical_tail_w_semi_span = Input(1.0)
+    vertical_tail_sweep = Input(25)
+    vertical_tail_twist = Input(2)
+    vertical_tail_incidence = Input(3)
 
     #:
     wing_dihedral: float = Input(3)
@@ -110,15 +137,35 @@ class Aircraft(GeomBase):
         return valid
 
     @Attribute
-    def total_weight(self):
+    def prelim_weight(self):
         motor_weight = 0
         for i in range(self.num_engines):
             motor_weight += self.engines[i].weight
-        return self.battery.weight + self.payload.weight + motor_weight
+        return 1.5*(self.battery.weight + self.payload.weight + motor_weight)
+
+    @Attribute  #based on stall speed for small propeller planes according to CS23
+    def wing_surface_area(self):
+        return(self.prelim_weight/(0.5*self.max_cl*self.air_density*(self.stall_speed/3.6)**2))
 
     @Attribute
     def cl_required(self):
-        return self.total_weight / (self.wing_surface_area * 0.5 * self.air_density * self.velocity ** 2)
+        return 1.1* self.prelim_weight / (self.wing_surface_area * 0.5 * self.air_density * self.velocity ** 2)
+
+    @Attribute
+    def aspect_ratio(self):
+        return self.w_semi_span**2 / self.wing_surface_area
+
+    @Attribute
+    def wing_weight(self): #based on Roskam Cessna method with conversion from metric to imperial and back to metric
+        return 0.4501*0.04674*((self.prelim_weight/0.4501)**(0.397))*((self.wing_surface_area/(0.3048**2))**0.360)*(self.n_ult**0.397)*(self.aspect_ratio**1.712)
+
+    @Attribute
+    def fuselage_weight(self): #based on Torenbeek method
+        return(self.prelim_weight*(0.447*sqrt(self.n_ult)*((self.fuselage.fuselage_length*self.fuselage.payload_section_radius**2)/self.prelim_weight)**0.24))
+
+    @Attribute
+    def total_weight(self):
+        return self.prelim_weight + self.wing_weight + self.fuselage_weight
 
     @Attribute
     def cog(self):
@@ -200,10 +247,10 @@ class Aircraft(GeomBase):
 
     @Part
     def rectangle(self):
-        return Rectangle(width=0.1 * self.w_c_root,
+        return Rectangle(width=0.1 * self.fuselage.payload_section_radius,
                          length=2 * child.width,
                          position=translate(
-                             rotate90(self.position, 'y'),
+                             rotate90(self.position, 'z'),
                              # self.right_wing.position,
                              'x',
                              self.fuselage.payload_section_length,
@@ -248,8 +295,8 @@ class Aircraft(GeomBase):
     def right_wing(self):
         return Semiwing(airfoil_root=self.airfoil_root,
                         airfoil_tip=self.airfoil_tip,
-                        w_c_root=self.w_c_root,
-                        w_c_tip=self.w_c_tip,
+                        wing_surface_area = self.wing_surface_area,
+
                         t_factor_root=self.t_factor_root,
                         t_factor_tip=self.t_factor_tip,
 
@@ -281,23 +328,35 @@ class Aircraft(GeomBase):
                              vector2=self.position.Vx,
                              mesh_deflection=0.0001)
 
+    @Attribute
+    def tail_arm(self):
+        return self.fuselage.fuselage_length * (self.vt_long - self.wing_position_fraction_long)
+
+    @Attribute
+    def horizontal_tail_surface_area(self):
+        return ((self.horizontal_tail_volume*self.wing_surface_area*self.right_wing.mean_aerodynamic_chord)/self.tail_arm)
+
+    @Attribute
+    def vertical_tail_surface_area(self):
+        return ((self.vertical_tail_volume*self.wing_surface_area*self.w_semi_span)/self.tail_arm)
+
     @Part
     def tail_right_wing(self):
-        return Semiwing(airfoil_root=self.airfoil_root,
-                        airfoil_tip=self.airfoil_tip,
-                        w_c_root=self.w_c_root,
-                        t_factor_root=self.t_factor_root,
-                        t_factor_tip=self.t_factor_tip,
+        return Semiwing(airfoil_root=self.horizontal_tail_airfoil_root,
+                        airfoil_tip=self.horizontal_tail_airfoil_tip,
+                        wing_surface_area = self.horizontal_tail_surface_area,
+                        t_factor_root=self.horizontal_tail_t_factor_root,
+                        t_factor_tip=self.horizontal_tail_t_factor_tip,
 
-                        w_semi_span=self.w_semi_span,
-                        twist=self.twist,
-                        incidence=self.incidence,
+                        w_semi_span=self.horizontal_tail_w_semi_span,
+                        twist=self.horizontal_tail_twist,
+                        incidence=self.horizontal_tail_incidence,
 
                         dynamic_viscosity=self.dynamic_viscosity,
                         air_density=self.air_density,
                         velocity=self.velocity,
 
-                        cl=self.cl_required,
+                        cl=self.tail_cl,
 
                         visc_option=Input(1),
 
@@ -319,22 +378,22 @@ class Aircraft(GeomBase):
 
     @Part
     def vertical_tail(self):
-        return Semiwing(airfoil_root=self.airfoil_root,
-                        airfoil_tip=self.airfoil_tip,
-                        w_c_root=self.w_c_root,
-                        t_factor_root=self.t_factor_root,
-                        t_factor_tip=self.t_factor_tip,
+        return Semiwing(airfoil_root=self.vertical_tail_airfoil_root,
+                        airfoil_tip=self.vertical_tail_airfoil_tip,
+                        wing_surface_area = self.vertical_tail_surface_area,
+                        t_factor_root=self.vertical_tail_t_factor_root,
+                        t_factor_tip=self.vertical_tail_t_factor_tip,
 
-                        w_semi_span=self.w_semi_span,
-                        sweep=self.sweep,
-                        twist=self.twist,
-                        incidence=self.incidence,
+                        w_semi_span=self.vertical_tail_w_semi_span,
+                        sweep=self.vertical_tail_sweep,
+                        twist=self.vertical_tail_twist,
+                        incidence=self.vertical_tail_incidence,
 
                         dynamic_viscosity=self.dynamic_viscosity,
                         air_density=self.air_density,
                         velocity=self.velocity,
 
-                        cl=self.cl_required,
+                        cl=self.tail_cl,
 
                         visc_option=Input(1),
 
