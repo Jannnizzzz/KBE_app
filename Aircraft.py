@@ -35,19 +35,23 @@ class Aircraft(GeomBase):
     payload_height = Input(0.2)  # in m
     payload_weight = Input(2.0)  # in kg
 
+    # geometry options
+
+    wing_location = Input()                 # 0 for low wing, 1 for high wing, mid wing is not considered as it clashes with payload
+    tail_location = Input()                 # 0 for low tail, 1 for T-tail
+
     # fuselage dimensions
 
     # wing dimensions & parameters
 
-
-    max_cl          = Input(1.5)
-    stall_speed     = Input(40)                        #stall speed in km/h
+    skin_friction_coefficient = Input(0.0030)
+    max_cl          = Input(1.0)
+    stall_speed     = Input(50)                        #stall speed in km/h
     #wing_surface_area = Input(1)  # dummy value
     n_ult           = Input(3.0)
     airfoil_root = Input()  # name of the airfoil of the wings root
     airfoil_tip = Input()  # name of the airfoil of the wings root
-    #w_c_root = Input(0.5)
-    #w_c_tip = Input(0.3)
+
     t_factor_root = Input(1.0)
     t_factor_tip = Input(1.0)
 
@@ -243,28 +247,28 @@ class Aircraft(GeomBase):
                                         (self.position, "x",
                                          self.fuselage.payload_section_length/2,
 
+
                         ))
 
     @Part
     def rectangle(self):
-        return Rectangle(width=0.1 * self.fuselage.payload_section_radius,
-                         length=2 * child.width,
+        return Rectangle(width=1.0 * self.fuselage.payload_section_radius,
+                         length=5.0 * child.width,
                          position=translate(
                              rotate90(self.position, 'z'),
                              # self.right_wing.position,
-                             'x',
-                             self.fuselage.payload_section_length,
+                             'y',
+                             -0.1*self.fuselage.payload_section_length,
                              #'z', child.length * self.dist),
 
                          #hidden=True
                                   ))
 
     @Part
-    def payload_door(self):  # only one result is visualized, although more wires can result from the operation
+    def payload_door(self):
         return ProjectedCurve(source=self.rectangle,  # source
-                              target=self.fuselage,  # target
+                              target=self.fuselage.fuselage_lofted_surf,  # target
                               direction=self.position.Vz)
-
 
     @Part
     def engines(self):
@@ -409,6 +413,10 @@ class Aircraft(GeomBase):
     def step_writer(self):
         return STEPWriter(trees=[self], filename="Outputs/step_export.stp")
 
+    @Attribute
+    def zero_lift_drag(self):
+        return self.skin_friction_coefficient * (self.fuselage.fuselage_lofted_surf.area+self.right_wing.area*2+self.tail_right_wing.area*2+self.vertical_tail.area)/self.wing_surface_area
+
     @action
     def iterate(self):
         any_changes = True
@@ -420,13 +428,13 @@ class Aircraft(GeomBase):
             any_changes = False
 
             # calculate, if the surface area of the wing has to be changed
-            required_extra_area = self.total_weight - (
-                        self.wing_surface_area * self.air_density * self.cl_required * 0.5 * self.velocity ** 2) / (
-                                              self.air_density * self.cl_required * 0.5 * self.velocity ** 2)
-            if abs(required_extra_area) >= 0.1:
-                print("Change surface area")
-                any_changes = True
-                self.wing_surface_area += required_extra_area
+            #required_extra_area = self.total_weight - (
+            #            self.wing_surface_area * self.air_density * self.cl_required * 0.5 * self.velocity ** 2) / (
+            #                                  self.air_density * self.cl_required * 0.5 * self.velocity ** 2)
+            #if abs(required_extra_area) >= 0.1:
+            #    print("Change surface area")
+            #    any_changes = True
+            #    self.wing_surface_area += required_extra_area
 
             # adjust motor selection
             for i in range(self.num_engines):
