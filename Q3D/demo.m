@@ -9,7 +9,8 @@ xu = data(idx:end,1);
 Winit = [-1 -1 -1 -1 1 1 1 1]; % initial weights
 
 % Run the optimization code
-[Wopt]=fmincon(@(W) airfoilfit(W,yt,xl,xu,0),Winit,[],[],[],[],ones(1,8)*-1,ones(1,8),[]);
+options = optimoptions('fmincon','Display','off');
+[Wopt]=fmincon(@(W) airfoilfit(W,yt,xl,xu,0),Winit,[],[],[],[],ones(1,8)*-1,ones(1,8),[], options);
 
 % Generate the CST airfoil with optimum weights
 %[ycoord] = CST_airfoil_fit(Wopt,xl,xu,0);

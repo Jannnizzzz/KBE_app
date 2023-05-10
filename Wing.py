@@ -5,13 +5,13 @@ from parapy.core import *
 from Airfoil import *
 from math import *
 import matlab.engine
-#from Q3D import MATLAB_Q3D_ENGINE
+from _init_ import MATLAB_Q3D_ENGINE
 from kbeutils import *
 from typing import Dict
 from matlab import *
 
 # initialise MATLAB engine
-MATLAB_Q3D_ENGINE = matlab.engine.start_matlab()
+#MATLAB_Q3D_ENGINE = matlab.engine.start_matlab()
 
 
 class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
@@ -64,6 +64,16 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
     def profiles(self):
         return [self.root_airfoil, self.tip_airfoil]
 
+    @Attribute
+    def root_cst(self):
+        root_data = self.root_airfoil.yt_xl_xu
+        return MATLAB_Q3D_ENGINE.demo(matlab.double(root_data), nargout=1)
+
+    @Attribute
+    def tip_cst(self):
+        tip_data = self.tip_airfoil.yt_xl_xu
+        return MATLAB_Q3D_ENGINE.demo(matlab.double(tip_data), nargout=1)
+
     @Part
     def root_airfoil(self):  # root airfoil will receive self.position as default
         return Airfoil(airfoil_name=self.airfoil_root,
@@ -102,19 +112,14 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
 
     @Attribute
     def run_q3d(self):
+        print("Run Q3D")
         """Run Q3D (MATLAB) and get back all results and input"""
-
-        # change matlab root directory to Q3D, so it can find the function
-        MATLAB_Q3D_ENGINE.cd(r'Q3D')
-
-        root_data = self.root_airfoil.yt_xl_xu
-        tip_data = self.tip_airfoil.yt_xl_xu
         visc_option = self.visc_option
-        velocity    = self.velocity
         air_density = self.air_density
-        reynolds_number = self.reynolds_number
+        velocity = self.velocity
+        cl = self.cl
+        reynolds_number = self.air_density*velocity/3.6*self.mean_aerodynamic_chord/self.dynamic_viscosity
         incidence       = self.incidence
-        cl              = self.cl
 
 
 
@@ -128,12 +133,43 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
 
         return MATLAB_Q3D_ENGINE.run_q3d(
             wing_geometry,
-            incidence,
-            visc_option,
-            matlab.double(root_data),
-            matlab.double(tip_data),
+            matlab.double([incidence]),
+            matlab.double([visc_option]),
+            matlab.double(self.root_cst),
+            matlab.double(self.tip_cst),
             matlab.double([air_density]),
-            matlab.double([velocity]),
+            matlab.double([velocity/3.6]),
+            matlab.double([reynolds_number]),
+            matlab.double([cl]),
+            nargout=2
+        )
+
+    def variable_run_q3d(self, velocity, cl):
+        print("Run Q3D")
+        """Run Q3D (MATLAB) and get back all results and input"""
+        visc_option = self.visc_option
+        air_density = self.air_density
+        reynolds_number = self.air_density*velocity/3.6*self.mean_aerodynamic_chord/self.dynamic_viscosity
+        incidence       = self.incidence
+
+
+
+
+        wing_geometry = matlab.double([[0, 0, 0, self.w_c_root, self.twist],
+                           [self.w_semi_span*tan(radians(self.sweep)), self.w_semi_span, 0, self.w_c_tip, self.twist]
+                           ])
+        incidence = matlab.double([incidence])
+
+        #print(wing_geometry, incidence)
+
+        return MATLAB_Q3D_ENGINE.run_q3d(
+            wing_geometry,
+            matlab.double([incidence]),
+            matlab.double([visc_option]),
+            matlab.double(self.root_cst),
+            matlab.double(self.tip_cst),
+            matlab.double([air_density]),
+            matlab.double([velocity/3.6]),
             matlab.double([reynolds_number]),
             matlab.double([cl]),
             nargout=2
@@ -144,22 +180,27 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
         """q3d results"""
         return self.run_q3d[0]
 
-    @Attribute
-    def q3d_ac(self) -> Dict:
+    def variable_q3d_res(self, velocity, cl) -> Dict:
+        """q3d results"""
+        return self.variable_run_q3d(velocity, cl)[0]
+
+    def q3d_ac(self, velocity, cl) -> Dict:
         """q3d inputs"""
-        return self.run_q3d[1]
+        return self.variable_run_q3d(velocity, cl)[1]
 
     @Attribute
     def wing_cl(self) -> float:
         return self.q3d_res["CLwing"]
 
+    def variable_wing_cd(self, velocity, cl) -> float:
+        return self.variable_q3d_res(velocity, cl)["CDwing"]
+
     @Attribute
     def wing_cd(self) -> float:
         return self.q3d_res["CDwing"]
 
-    @Attribute
-    def wing_alfa(self) -> float:
-        return self.q3d_res["Alfa"]
+    def wing_alfa(self, velocity) -> float:
+        return self.variable_q3d_res(velocity)["Alfa"]
 
 
     #print(wing_cl)

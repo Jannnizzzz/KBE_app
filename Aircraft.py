@@ -43,14 +43,16 @@ class Aircraft(GeomBase):
     # fuselage dimensions
 
     # wing dimensions & parameters
-
     skin_friction_coefficient = Input(0.0030)
     max_cl          = Input(1.0)
     stall_speed     = Input(50)                        #stall speed in km/h
-    #wing_surface_area = Input(1)  # dummy value
+    wing_surface_area = Input(1)  # dummy value
     n_ult           = Input(3.0)
     airfoil_root = Input()  # name of the airfoil of the wings root
     airfoil_tip = Input()  # name of the airfoil of the wings root
+
+    cl_required = Input(0.4)
+
 
     t_factor_root = Input(1.0)
     t_factor_tip = Input(1.0)
@@ -114,9 +116,6 @@ class Aircraft(GeomBase):
     battery_capacity = Input(1)
     battery_cells = Input(3)
 
-    # __initargs__ = "endurance, endurance_mode, velocity, propeller, num_engines"# , structural_material, " \
-    # + "airfoil_root, airfoil_tip"
-
     @Attribute
     def time_requirement(self):
         return self.endurance if self.endurance_mode == 'T' else self.endurance / self.velocity
@@ -127,7 +126,7 @@ class Aircraft(GeomBase):
         return int(self.propeller[:split]) * 0.0254
 
     @Input
-    def prop_inclination(self):
+    def prop_pitch(self):
         split = self.propeller.index('x')
         return int(self.propeller[split + 1:])
 
@@ -147,13 +146,14 @@ class Aircraft(GeomBase):
             motor_weight += self.engines[i].weight
         return 1.5*(self.battery.weight + self.payload.weight + motor_weight)
 
-    @Attribute  #based on stall speed for small propeller planes according to CS23
-    def wing_surface_area(self):
-        return(self.prelim_weight/(0.5*self.max_cl*self.air_density*(self.stall_speed/3.6)**2))
+    # @Attribute  #based on stall speed for small propeller planes according to CS23
+    # def wing_surface_area(self):
+    #     print("Calculate wing area")
+    #     return(self.prelim_weight/(0.5*self.max_cl*self.air_density*(self.stall_speed/3.6)**2))
 
-    @Attribute
-    def cl_required(self):
-        return 1.1* self.prelim_weight / (self.wing_surface_area * 0.5 * self.air_density * self.velocity ** 2)
+    # @Attribute
+    # def cl_required(self):
+    #     return 1.1* self.prelim_weight / (self.wing_surface_area * 0.5 * self.air_density * self.velocity ** 2)
 
     @Attribute
     def aspect_ratio(self):
@@ -170,6 +170,7 @@ class Aircraft(GeomBase):
     @Attribute
     def total_weight(self):
         return self.prelim_weight + self.wing_weight + self.fuselage_weight
+
 
     @Attribute
     def cog(self):
@@ -227,14 +228,70 @@ class Aircraft(GeomBase):
         return data
 
     @Attribute
-    def thrust(self):
-        surface = self.total_weight / 55
-        rho = 1.225
-        cD0 = .02
-        k = 1 / (np.pi * surface / self.max_width ** 2 * .8)
+    def drag(self):
+        print("Calculate drag")
+        drag = 0
+        velocity = self.velocity        # in km/h
 
-        return 0.5 * rho * surface * cD0 * (self.velocity / 3.6) ** 2 \
-               + 2 * self.total_weight ** 2 * k / (rho * surface * (self.velocity / 3.6) ** 2)
+        # wing drag
+        cD_wing = self.right_wing.wing_cd
+        drag += self.air_density/2 * (velocity/3.6)**2 * self.wing_surface_area * cD_wing
+
+        # horizontal tail
+        cD_htail = self.tail_right_wing.wing_cd
+        drag += self.air_density/2 * (velocity/3.6)**2 * self.horizontal_tail_surface_area * cD_htail
+
+        # horizontal tail
+        cD_vtail = self.vertical_tail.wing_cd
+        drag += self.air_density/2 * (velocity/3.6)**2 * self.vertical_tail_surface_area * cD_vtail
+
+        # fuselage
+        drag += self.zero_lift_drag
+
+        return drag
+
+    def variable_drag(self, velocities):
+        drags = np.zeros_like(velocities)
+        cLs = np.zeros_like(velocities)
+        cDs = np.zeros_like(velocities)
+
+        for i, velocity in enumerate(velocities):
+            # wing drag
+            cLs[i] = self.total_weight/(self.wing_surface_area*0.5*self.air_density*(velocity/3.6)**2)
+            cDs[i] = self.right_wing.variable_wing_cd(velocity, cLs[i])
+            drags[i] += self.air_density/2 * (velocity/3.6)**2 * self.wing_surface_area * cDs[i]
+
+            # TODO: drag of other components
+
+        return drags, cLs, cDs
+
+    @Attribute
+    def motor_y_positions(self):
+        y_pos = np.zeros((self.num_engines,))
+        fuselage_radius = self.fuselage.payload_section_radius
+
+        if self.num_engines % 2 == 1:
+            middle_index = int((self.num_engines-1)/2)
+            y_pos[middle_index] = 0
+
+            if self.num_engines > 1:
+                y_pos[middle_index + 1] = max(fuselage_radius + self.prop_diameter, 3/2*self.prop_diameter)
+                y_pos[middle_index - 1] = -max(fuselage_radius + self.prop_diameter, 3/2*self.prop_diameter)
+                for i in range(2, self.num_engines - middle_index):
+                    y_pos[middle_index + i] = y_pos[middle_index + i - 1] + 3/2*self.prop_diameter
+                    y_pos[middle_index - i] = y_pos[middle_index - i + 1] - 3/2*self.prop_diameter
+
+        else:
+            halve_point = int(self.num_engines/2)
+            y_pos[halve_point] = max(fuselage_radius + self.prop_diameter, 3/4*self.prop_diameter)
+            y_pos[halve_point-1] = -max(fuselage_radius + self.prop_diameter, 3/4*self.prop_diameter)
+
+            for i in range(1, halve_point):
+                y_pos[halve_point + i] = y_pos[halve_point + i - 1] + 3/2*self.prop_diameter
+                y_pos[halve_point - i - 1] = y_pos[halve_point + i - 2] - 3/2*self.prop_diameter
+
+        return y_pos
+
 
     @Part
     def battery(self):
@@ -245,10 +302,8 @@ class Aircraft(GeomBase):
     def fuselage(self):
         return Fuselage(position= translate
                                         (self.position, "x",
-                                         self.fuselage.payload_section_length/2,
+                                         self.fuselage.payload_section_length/2,))
 
-
-                        ))
 
     @Part
     def rectangle(self):
@@ -275,14 +330,16 @@ class Aircraft(GeomBase):
         return Engine(quantify=self.num_engines,
                       prop=self.propeller,
                       velocity_op=self.velocity,
-                      thrust_op=self.thrust / self.num_engines,
+                      thrust_op=self.drag/self.num_engines,
                       max_voltage=self.battery.voltage,
                       voltage_per_cell=self.battery.voltage_per_cell,
                       motor_data=self.motor_data,
-                      pos_x=0,
-                      pos_y=-(
-                                  self.num_engines - 1) * 3 / 4 * self.prop_diameter + child.index * 3 / 2 * self.prop_diameter,
-                      pos_z=0 if child.index != (self.num_engines - 1) / 2 else self.prop_diameter * 3 / 4,
+                      pos_x=np.sign((self.num_engines-1)/2 - child.index) * np.tan(np.radians(self.right_wing.sweep))
+                            * self.motor_y_positions[child.index] if child.index != (self.num_engines-1)/2
+                            else self.fuselage.profile_set[0].location.x,
+                      pos_y=self.motor_y_positions[child.index],
+                      pos_z=0 if child.index != (self.num_engines-1)/2
+                              else self.fuselage.profile_set[0].location.z,
                       iteration_history=np.zeros((3,)))
 
     @Part
@@ -315,7 +372,7 @@ class Aircraft(GeomBase):
 
                         cl=self.cl_required,
 
-                        visc_option=Input(1),
+                        visc_option=1,
 
                         #position=rotate(
                         #                "x",
@@ -362,7 +419,7 @@ class Aircraft(GeomBase):
 
                         cl=self.tail_cl,
 
-                        visc_option=Input(1),
+                        visc_option=1,
 
                         position=rotate(translate
                                         (self.position, "x",
@@ -399,7 +456,7 @@ class Aircraft(GeomBase):
 
                         cl=self.tail_cl,
 
-                        visc_option=Input(1),
+                        visc_option=1,
 
                         position=rotate(translate
                                         (self.position,
@@ -411,7 +468,7 @@ class Aircraft(GeomBase):
 
     @Part
     def step_writer(self):
-        return STEPWriter(trees=[self], filename="Outputs/step_export.stp")
+        return STEPWriter(trees=[self], filename="Outputs/step_export.stp", unit="M")
 
     @Attribute
     def zero_lift_drag(self):
@@ -427,14 +484,11 @@ class Aircraft(GeomBase):
             print("Capacity", self.battery.capacity, " Ah")
             any_changes = False
 
+            # change the required cL of the wing to match current conditions
+            self.cl_required = self.total_weight/(self.wing_surface_area*0.5*self.air_density*(self.velocity/3.6)**2)
+
             # calculate, if the surface area of the wing has to be changed
-            #required_extra_area = self.total_weight - (
-            #            self.wing_surface_area * self.air_density * self.cl_required * 0.5 * self.velocity ** 2) / (
-            #                                  self.air_density * self.cl_required * 0.5 * self.velocity ** 2)
-            #if abs(required_extra_area) >= 0.1:
-            #    print("Change surface area")
-            #    any_changes = True
-            #    self.wing_surface_area += required_extra_area
+            self.wing_surface_area = self.total_weight/(0.5*self.max_cl*self.air_density*(self.stall_speed/3.6)**2)
 
             # adjust motor selection
             for i in range(self.num_engines):
@@ -468,8 +522,8 @@ class Aircraft(GeomBase):
         v, t = characteristics[:, 0, :], self.num_engines * characteristics[:, 7, :]
 
         plt.plot(v, t, 'b')
-        plt.plot(self.velocity, self.thrust, 'r*')
-        plt.plot([0, self.velocity, self.velocity], [self.thrust, self.thrust, 0], 'k:')
+        plt.plot(self.velocity, self.drag, 'r*')
+        plt.plot([0, self.velocity, self.velocity], [self.drag, self.drag, 0], 'k:')
         plt.xlabel("Velocity (km/h)")
         plt.ylabel("Thrust (N)")
         plt.title("Thrust over velocity of the drone")
@@ -503,17 +557,44 @@ class Aircraft(GeomBase):
 
     @action
     def velocity_sweep(self):
-        velocity = np.linspace(50, 150, 10)
-        drag = 0.05 * (velocity / 3.6) ** 2
-        motor_speed, torque, thrust, voltage, current, op_valid = self.engines[0].variable_velocity(velocity,
-                                                                                                    drag / self.num_engines)
+        velocities = np.linspace(50, 150, 11)
+        drags, cLs, cDs = self.variable_drag(velocities)
+        motor_speed, torque, thrust, voltage, current, op_valid = self.engines[0].variable_velocity(velocities, drags/self.num_engines)
 
-        plt.plot(velocity, motor_speed)
+        fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True, sharey=False)
+        ax1.plot(velocities, motor_speed)
+        ax1.set_ylabel("Motor Speed (1/s)")
+        ax1.set_title("")
+
+        ax2.plot(velocities, drags)
+        ax2.set_ylabel("Drag (N)")
+        ax2.set_title("")
+
+        ax3.plot(velocities, current)
+        ax3.set_ylabel("Current (A)")
+        ax3.set_title("")
+
+        ax4.plot(velocities, cDs/cLs)
+        ax4.set_ylabel("Aerodynamic Efficiency (-)")
+        ax4.set_title("")
+
         plt.xlabel("Velocity (km/h)")
-        plt.ylabel("Motor Speed (1/s)")
-        plt.title("")
         plt.savefig('Outputs/velocity_sweep.pdf')
-        plt.close()
+        plt.close(fig)
+
+    @action
+    def export_parameters(self):
+        columns = ['Value', 'Unit']
+        index = ['Endurance', 'Endurance Mode', 'Velocity', 'Propeller', '# Engines', 'Material', 'Airfoil Root',
+                'Airfoil Tip', 'Battery Capacity', 'Battery Cells', 'Motor Name']
+        values = np.array([self.endurance, self.endurance_mode, self.velocity, self.propeller, self.num_engines,
+                  self.structural_material, self.wing.airfoil_root, self.wing.airfoil_tip, self.battery.capacity,
+                  self.battery.cells, self.motor_data[self.engines[0].motor.motor_idx, 0]])
+        units = np.array(['h' if values[1] == 'T' else 'km', np.nan, 'km/h', np.nan, np.nan, np.nan, np.nan, np.nan,
+                 'Ah', np.nan, np.nan])
+
+        df = pd.DataFrame(np.vstack((values, units)).T, index=index, columns=columns)
+        df.to_excel('Outputs/parameters.xlsx')
 
 
 if __name__ == '__main__':
@@ -531,6 +612,5 @@ if __name__ == '__main__':
 
     from parapy.gui import display
 
-    # obj.iterate()
-    obj.velocity_sweep()
+    obj.iterate()
     display(obj)

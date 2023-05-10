@@ -1,6 +1,4 @@
-function [Res, AC] = run_q3d(wing_planform_geom, wing_incidence_angle, visc_option,  root_data, tip_data,air_density, velocity, reynolds_number,cl)
-    disp("Print root data")
-    disp(root_data)
+function [Res, AC] = run_q3d(wing_planform_geom, wing_incidence_angle, visc_option,  root_cst, tip_cst,air_density, velocity, reynolds_number,cl)
 
    % Wing planform geometry
    %                x    y     z   chord(m)    twist angle (deg)
@@ -12,8 +10,8 @@ function [Res, AC] = run_q3d(wing_planform_geom, wing_incidence_angle, visc_opti
 %    AC.Wing.inc  = 0;
      AC.Wing.inc  = wing_incidence_angle;
 
-    root_cst = demo(root_data)
-    tip_cst  = demo(tip_data)
+    %root_cst = demo(root_data);
+    %tip_cst  = demo(tip_data);
    % Airfoil coefficients input matrix
    %                    | ->     upper curve coeff.                <-|   | ->       lower curve coeff.       <-|
    %AC.Wing.Airfoils   = [0.2171    0.3450    0.2975    0.2685    0.2893  -0.1299   -0.2388   -0.1635   -0.0476    0.0797;
@@ -29,9 +27,8 @@ function [Res, AC] = run_q3d(wing_planform_geom, wing_incidence_angle, visc_opti
    AC.Aero.MaxIterIndex = 150;    %Maximum number of Iteration for the
                                    %convergence of viscous calculation
 
-
    % Flight Condition
-   AC.Aero.V     = velocity/3.6;            % flight speed (m/s)
+   AC.Aero.V     = velocity;            % flight speed (m/s)
    AC.Aero.rho   = air_density;         % air density  (kg/m3)
    AC.Aero.alt   = 0;             % flight altitude (m)
    AC.Aero.Re    = reynolds_number;        % reynolds number (bqased on mean aerodynamic chord)
@@ -41,10 +38,10 @@ function [Res, AC] = run_q3d(wing_planform_geom, wing_incidence_angle, visc_opti
 
 
    %%
-   tic
+   %tic
 
    Res = Q3D_solver(AC);
 
-   toc
+   %toc
 
 end
