@@ -565,10 +565,10 @@ class Aircraft(GeomBase):
     @action
     def velocity_sweep(self):
         velocities = np.linspace(50, 150, 11)
-        drags, cLs, cDs = self.variable_drag(velocities)
+        drags = self.variable_drag(velocities)
         motor_speed, torque, thrust, voltage, current, op_valid = self.engines[0].variable_velocity(velocities, drags/self.num_engines)
 
-        fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True, sharey=False)
+        fig, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(4, 1, sharex=True, sharey=False)
         ax1.plot(velocities, motor_speed)
         ax1.set_ylabel("Motor Speed (1/s)")
         ax1.set_title("")
@@ -581,9 +581,13 @@ class Aircraft(GeomBase):
         ax3.set_ylabel("Current (A)")
         ax3.set_title("")
 
-        ax4.plot(velocities, cDs/cLs)
-        ax4.set_ylabel("Aerodynamic Efficiency (-)")
+        ax4.plot(velocities, voltage/self.battery.voltage)
+        ax4.set_ylabel("Throttle (-)")
         ax4.set_title("")
+
+        ax5.plot(velocities, drags/self.total_weight)
+        ax5.set_ylabel("Aerodynamic Efficiency (-)")
+        ax5.set_title("")
 
         plt.xlabel("Velocity (km/h)")
         plt.savefig('Outputs/velocity_sweep.pdf')
@@ -627,9 +631,9 @@ if __name__ == '__main__':
                    horizontal_tail_airfoil_tip=data[8, 1],
                    vertical_tail_airfoil_root=data[9, 1],
                    vertical_tail_airfoil_tip=data[9, 1],
-                   payload_width=data[10, 1],      # when uncommented, Q3D calculation sometimes crashes for the tail
-                   payload_length=data[11, 1],     # Reason unknown so far. But apparently the values from the input
-                   payload_height=data[12, 1],     # file make issues
+                   payload_width=data[10, 1],
+                   payload_length=data[11, 1],
+                   payload_height=data[12, 1],
                    payload_weight=data[13, 1]
                 )
 
@@ -643,5 +647,5 @@ if __name__ == '__main__':
 
     from parapy.gui import display
 
-    obj.iterate()
+    #obj.iterate()
     display(obj)
