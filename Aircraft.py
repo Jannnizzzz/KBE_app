@@ -33,7 +33,7 @@ class Aircraft(GeomBase):
     payload_width = Input(0.2)  # in m
     payload_length = Input(0.5)  # in m
     payload_height = Input(0.2)  # in m
-    payload_weight = Input(2.0)  # in kg
+    payload_weight = Input(2.0*9.80665)  # in N
 
     # geometry options
 
@@ -168,8 +168,15 @@ class Aircraft(GeomBase):
         return(self.prelim_weight*(0.447*sqrt(self.n_ult)*((self.fuselage.fuselage_length*self.fuselage.payload_section_radius**2)/self.prelim_weight)**0.24))
 
     @Attribute
+    def motor_weight(self):
+        motor_weight = 0
+        for i in range(self.num_engines):
+            motor_weight += self.engines[i].weight
+        return motor_weight
+
+    @Attribute
     def total_weight(self):
-        return self.prelim_weight + self.wing_weight + self.fuselage_weight
+        return self.battery.weight + self.payload.weight + self.motor_weight + self.wing_weight + self.fuselage_weight
 
 
     @Attribute
@@ -222,7 +229,7 @@ class Aircraft(GeomBase):
 
     @Attribute
     def motor_data(self):
-        data = pd.read_excel('Motor_data.xlsx')
+        data = pd.read_excel('Inputs/Motor_data.xlsx')
         data = np.array(data)
         data = data[data[:, 1].argsort()]
         return data
@@ -347,7 +354,7 @@ class Aircraft(GeomBase):
         return Payload(length=self.payload_length,
                        width=self.payload_width,
                        height=self.payload_height,
-                       weight=9.80665 * self.payload_weight,
+                       weight=self.payload_weight,
                        cog_x=self.battery.cog.x - self.battery.length / 2 - self.payload_length / 2,
                        cog_y=0,
                        cog_z=0)
@@ -468,7 +475,7 @@ class Aircraft(GeomBase):
 
     @Part
     def step_writer(self):
-        return STEPWriter(trees=[self], filename="Outputs/step_export.stp", unit="M")
+        return STEPWriter(trees=[self], filename="Outputs/step_export.stp")
 
     @Attribute
     def zero_lift_drag(self):
@@ -586,19 +593,26 @@ class Aircraft(GeomBase):
     def export_parameters(self):
         columns = ['Value', 'Unit']
         index = ['Endurance', 'Endurance Mode', 'Velocity', 'Propeller', '# Engines', 'Material', 'Airfoil Root',
-                'Airfoil Tip', 'Battery Capacity', 'Battery Cells', 'Motor Name']
+                 'Airfoil Tip', 'Airfoil Horizontal Tail', 'Airfoil Vertical Tail', 'Payload Width', 'Payload Length',
+                 'Payload Height', 'Payload Weight', 'Battery Capacity', 'Battery Cells',
+                 'Motor Name', 'Lift to Drag (design point)']
         values = np.array([self.endurance, self.endurance_mode, self.velocity, self.propeller, self.num_engines,
-                  self.structural_material, self.wing.airfoil_root, self.wing.airfoil_tip, self.battery.capacity,
-                  self.battery.cells, self.motor_data[self.engines[0].motor.motor_idx, 0]])
+                           self.structural_material, self.right_wing.airfoil_root, self.right_wing.airfoil_tip,
+                           self.horizontal_tail_airfoil_root, self.vertical_tail_airfoil_root, self.payload_width,
+                           self.payload_length,
+                           self.payload_height, self.payload_weight, self.battery.capacity,
+                           self.battery.cells, self.motor_data[self.engines[0].motor.motor_idx, 0],
+                           self.total_weight / self.drag])
         units = np.array(['h' if values[1] == 'T' else 'km', np.nan, 'km/h', np.nan, np.nan, np.nan, np.nan, np.nan,
-                 'Ah', np.nan, np.nan])
+                          np.nan, np.nan, 'm', 'm', 'm', 'N', 'Ah', np.nan, np.nan, np.nan])
+
 
         df = pd.DataFrame(np.vstack((values, units)).T, index=index, columns=columns)
         df.to_excel('Outputs/parameters.xlsx')
 
 
 if __name__ == '__main__':
-    data = pd.read_excel('Input_data.xlsx')
+    data = pd.read_excel('Inputs/Input_data.xlsx')
     data = np.array(data)
 
     obj = Aircraft(endurance=data[0, 1],
@@ -608,7 +622,24 @@ if __name__ == '__main__':
                    num_engines=data[4, 1],
                    structural_material=data[5, 1],
                    airfoil_root=data[6, 1],
-                   airfoil_tip=data[7, 1])
+                   airfoil_tip=data[7, 1],
+                   horizontal_tail_airfoil_root=data[8, 1],
+                   horizontal_tail_airfoil_tip=data[8, 1],
+                   vertical_tail_airfoil_root=data[9, 1],
+                   vertical_tail_airfoil_tip=data[9, 1],
+                   payload_width=data[10, 1],      # when uncommented, Q3D calculation sometimes crashes for the tail
+                   payload_length=data[11, 1],     # Reason unknown so far. But apparently the values from the input
+                   payload_height=data[12, 1],     # file make issues
+                   payload_weight=data[13, 1]
+                )
+
+    # optional inputs
+    for i in range(14, data.shape[0]):
+        if not np.isnan(data[i, 1]):
+            if data[i, 0] == 'Battery Capacity':
+                obj.battery_capacity = data[i, 1]
+            elif data[i, 0] == 'Battery Cells':
+                obj.battery_cells = data[i, 1]
 
     from parapy.gui import display
 

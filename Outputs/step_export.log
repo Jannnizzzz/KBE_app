@@ -1,0 +1,267 @@
+STEP in Solid Edge konvertieren
+Datum: Mittwoch,Mai 10,2023 02:05
+Quelldatei: C:\Users\janni\Desktop\KBE_app\Outputs\step_export.stp
+Autor: Author
+Organisation: Open CASCADE
+Ausgangssystem: ParaPy 1.10.0 - Open CASCADE 7.3
+
+Hardware:
+Prozessor: Intel(R) Core(TM) i7-7500U CPU @ 2.70GHz
+Betriebssystem: Windows 8
+Installierter Speicher: 7.88 GB
+
+Software-Informationen
+Parasolid-Version: 30.1.256
+PSBodyShop-Version: 30.1.94
+Step-Adapterversion: 4.0.40
+Solid Edge-Version: 219.00.01.006 x64
+
+Step-Importoptionen
+Facettierte Körper importieren: Ein
+Prüfkörper importieren: Aus
+Kurven importieren: Ein
+DoNotSave importieren: Ein
+Mehrere Körper als Einzelteildatei importieren: Ein
+Flächenvernähung importieren: Ein
+Boolesche Körper importieren: Ein
+Basisformelement erstellen: Ein
+Geometrie vereinfachen: Ein
+Druckkurven importieren: Ein
+Führung importieren: C:
+Flächenvernähung importieren: Ein
+Flächen importieren: Ein
+Ausgabepfad importieren: C:\Users\janni\Desktop\KBE_app\Outputs
+Aktivieren des standardmäßigen Ausgabepfads importieren: Ein
+Pfad importieren: 
+
+Übersetzen in Parasolid-Datentypen...
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
+Warn:     Unregistered message code: PSF_INVALID_COLORS. Notify vendor.
+
++Baugruppe 1 beginnen
++SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\step_export.asm wurde erstellt
+|--+Baugruppe 2 beginnen
+|--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\ROOT.asm wurde erstellt
+|  |--+Baugruppe 3 beginnen
+|  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\battery.asm wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\body.par wurde erstellt
+|  |--+Gesamtzahl der Teile: 2
+|  |--+Baugruppen: 0
+|  |--+Volumenkörper: 2
+|  |--+Flächenkörper: 0
+|  |--+Baugruppe 3 beenden
+|  |--+Baugruppe 3 beginnen
+|  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\engines.asm wurde erstellt
+|  |  |--+Baugruppe 4 beginnen
+|  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\0.asm wurde erstellt
+|  |  |  |--+Baugruppe 5 beginnen
+|  |  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\motor.asm wurde erstellt
+|  |  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\body_0.par wurde erstellt
+|  |  |  |--+Gesamtzahl der Teile: 2
+|  |  |  |--+Baugruppen: 0
+|  |  |  |--+Volumenkörper: 2
+|  |  |  |--+Flächenkörper: 0
+|  |  |  |--+Baugruppe 5 beenden
+|  |  |  |--+Baugruppe 5 beginnen
+|  |  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\propeller.asm wurde erstellt
+|  |  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\body_1.par wurde erstellt
+|  |  |  |--+Gesamtzahl der Teile: 2
+|  |  |  |--+Baugruppen: 0
+|  |  |  |--+Volumenkörper: 2
+|  |  |  |--+Flächenkörper: 0
+|  |  |  |--+Baugruppe 5 beenden
+|  |  |--+Gesamtzahl der Teile: 2
+|  |  |--+Baugruppen: 2
+|  |  |--+Volumenkörper: 0
+|  |  |--+Flächenkörper: 0
+|  |  |--+Baugruppe 4 beenden
+|  |  |--+Baugruppe 4 beginnen
+|  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\1.asm wurde erstellt
+|  |  |  |--+Baugruppe 5 beginnen
+|  |  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\motor_0.asm wurde erstellt
+|  |  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\body_2.par wurde erstellt
+|  |  |  |--+Gesamtzahl der Teile: 2
+|  |  |  |--+Baugruppen: 0
+|  |  |  |--+Volumenkörper: 2
+|  |  |  |--+Flächenkörper: 0
+|  |  |  |--+Baugruppe 5 beenden
+|  |  |  |--+Baugruppe 5 beginnen
+|  |  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\propeller_0.asm wurde erstellt
+|  |  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\body_3.par wurde erstellt
+|  |  |  |--+Gesamtzahl der Teile: 2
+|  |  |  |--+Baugruppen: 0
+|  |  |  |--+Volumenkörper: 2
+|  |  |  |--+Flächenkörper: 0
+|  |  |  |--+Baugruppe 5 beenden
+|  |  |--+Gesamtzahl der Teile: 2
+|  |  |--+Baugruppen: 2
+|  |  |--+Volumenkörper: 0
+|  |  |--+Flächenkörper: 0
+|  |  |--+Baugruppe 4 beenden
+|  |  |--+Baugruppe 4 beginnen
+|  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\2.asm wurde erstellt
+|  |  |  |--+Baugruppe 5 beginnen
+|  |  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\motor_1.asm wurde erstellt
+|  |  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\body_4.par wurde erstellt
+|  |  |  |--+Gesamtzahl der Teile: 2
+|  |  |  |--+Baugruppen: 0
+|  |  |  |--+Volumenkörper: 2
+|  |  |  |--+Flächenkörper: 0
+|  |  |  |--+Baugruppe 5 beenden
+|  |  |  |--+Baugruppe 5 beginnen
+|  |  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\propeller_1.asm wurde erstellt
+|  |  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\body_5.par wurde erstellt
+|  |  |  |--+Gesamtzahl der Teile: 2
+|  |  |  |--+Baugruppen: 0
+|  |  |  |--+Volumenkörper: 2
+|  |  |  |--+Flächenkörper: 0
+|  |  |  |--+Baugruppe 5 beenden
+|  |  |--+Gesamtzahl der Teile: 2
+|  |  |--+Baugruppen: 2
+|  |  |--+Volumenkörper: 0
+|  |  |--+Flächenkörper: 0
+|  |  |--+Baugruppe 4 beenden
+|  |  |--+Baugruppe 4 beginnen
+|  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\3.asm wurde erstellt
+|  |  |  |--+Baugruppe 5 beginnen
+|  |  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\motor_2.asm wurde erstellt
+|  |  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\body_6.par wurde erstellt
+|  |  |  |--+Gesamtzahl der Teile: 2
+|  |  |  |--+Baugruppen: 0
+|  |  |  |--+Volumenkörper: 2
+|  |  |  |--+Flächenkörper: 0
+|  |  |  |--+Baugruppe 5 beenden
+|  |  |  |--+Baugruppe 5 beginnen
+|  |  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\propeller_2.asm wurde erstellt
+|  |  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\body_7.par wurde erstellt
+|  |  |  |--+Gesamtzahl der Teile: 2
+|  |  |  |--+Baugruppen: 0
+|  |  |  |--+Volumenkörper: 2
+|  |  |  |--+Flächenkörper: 0
+|  |  |  |--+Baugruppe 5 beenden
+|  |  |--+Gesamtzahl der Teile: 2
+|  |  |--+Baugruppen: 2
+|  |  |--+Volumenkörper: 0
+|  |  |--+Flächenkörper: 0
+|  |  |--+Baugruppe 4 beenden
+|  |--+Gesamtzahl der Teile: 4
+|  |--+Baugruppen: 4
+|  |--+Volumenkörper: 0
+|  |--+Flächenkörper: 0
+|  |--+Baugruppe 3 beenden
+|  |--+Baugruppe 3 beginnen
+|  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\fuselage.asm wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\fuselage_lofted_surf.par wurde erstellt
+|  |  |--+Baugruppe 4 beginnen
+|  |  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\profile_set.asm wurde erstellt
+|  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\0.par wurde erstellt
+|  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\1.par wurde erstellt
+|  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\2.par wurde erstellt
+|  |  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\3.par wurde erstellt
+|  |  |--+Gesamtzahl der Teile: 0
+|  |  |--+Baugruppen: 0
+|  |  |--+Volumenkörper: 0
+|  |  |--+Flächenkörper: 0
+|  |  |--+Baugruppe 4 beenden
+|  |--+Gesamtzahl der Teile: 3
+|  |--+Baugruppen: 1
+|  |--+Volumenkörper: 0
+|  |--+Flächenkörper: 2
+|  |--+Baugruppe 3 beenden
+|  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\left_wing.par wurde erstellt
+|  |--+Baugruppe 3 beginnen
+|  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\payload.asm wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\body_8.par wurde erstellt
+|  |--+Gesamtzahl der Teile: 2
+|  |--+Baugruppen: 0
+|  |--+Volumenkörper: 2
+|  |--+Flächenkörper: 0
+|  |--+Baugruppe 3 beenden
+|  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\payload_door.par wurde erstellt
+|  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\rectangle.par wurde erstellt
+|  |--+Baugruppe 3 beginnen
+|  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\right_wing_ASSEMBLY.asm wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\right_wing.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\lofted_solid.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\lofted_surf.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\root_airfoil.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\tip_airfoil.par wurde erstellt
+|  |--+Gesamtzahl der Teile: 6
+|  |--+Baugruppen: 0
+|  |--+Volumenkörper: 4
+|  |--+Flächenkörper: 2
+|  |--+Baugruppe 3 beenden
+|  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\tail_left_wing.par wurde erstellt
+|  |--+Baugruppe 3 beginnen
+|  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\tail_right_wing_ASSEMBLY.asm wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\tail_right_wing.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\lofted_solid_0.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\lofted_surf_0.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\root_airfoil_0.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\tip_airfoil_0.par wurde erstellt
+|  |--+Gesamtzahl der Teile: 6
+|  |--+Baugruppen: 0
+|  |--+Volumenkörper: 4
+|  |--+Flächenkörper: 2
+|  |--+Baugruppe 3 beenden
+|  |--+Baugruppe 3 beginnen
+|  |--+SE Assembly-Datei C:\Users\janni\Desktop\KBE_app\Outputs\vertical_tail_ASSEMBLY.asm wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\vertical_tail.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\lofted_solid_1.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\lofted_surf_1.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\root_airfoil_1.par wurde erstellt
+|  |  |--+SE Part-Datei C:\Users\janni\Desktop\KBE_app\Outputs\tip_airfoil_1.par wurde erstellt
+|  |--+Gesamtzahl der Teile: 6
+|  |--+Baugruppen: 0
+|  |--+Volumenkörper: 4
+|  |--+Flächenkörper: 2
+|  |--+Baugruppe 3 beenden
+|--+Gesamtzahl der Teile: 11
+|--+Baugruppen: 7
+|--+Volumenkörper: 4
+|--+Flächenkörper: 0
+|--+Baugruppe 2 beenden
++Gesamtzahl der Teile: 1
++Baugruppen: 1
++Volumenkörper: 0
++Flächenkörper: 0
++Baugruppe 1 beenden
+Konvertierungsvorgang ist abgeschlossen
+Zur Übersetzung und Nachbearbeitung erforderte Gesamtzeit:00 : 00 : 10
