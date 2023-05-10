@@ -627,10 +627,10 @@ if __name__ == '__main__':
                    horizontal_tail_airfoil_tip=data[8, 1],
                    vertical_tail_airfoil_root=data[9, 1],
                    vertical_tail_airfoil_tip=data[9, 1],
-                   payload_width=data[10, 1],      # when uncommented, Q3D calculation sometimes crashes for the tail
-                   payload_length=data[11, 1],     # Reason unknown so far. But apparently the values from the input
-                   payload_height=data[12, 1],     # file make issues
-                   payload_weight=data[13, 1]
+                   #payload_width=data[10, 1],      # when uncommented, Q3D calculation sometimes crashes for the tail
+                   #payload_length=data[11, 1],     # Reason unknown so far. But apparently the values from the input
+                   #payload_height=data[12, 1],     # file make issues
+                   #payload_weight=data[13, 1]
                 )
 
     # optional inputs
