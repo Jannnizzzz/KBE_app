@@ -6,26 +6,26 @@
      # Strips   =  28
      # Vortices = 224
 
-  Sref =  40.000       Cref =  2.1667       Bref =  20.000    
+  Sref = 0.45790       Cref = 0.24987       Bref =  2.0000    
   Xref =  0.0000       Yref =  0.0000       Zref =  0.0000    
 
  Standard axis orientation,  X fwd, Z down         
 
  Run case:  -unnamed-                              
 
-  Alpha =  -3.25238     pb/2V =   0.00000     p'b/2V =   0.00000
+  Alpha =  -8.61724     pb/2V =   0.00000     p'b/2V =   0.00000
   Beta  =   0.00000     qc/2V =   0.00000
   Mach  =     0.200     rb/2V =   0.00000     r'b/2V =   0.00000
 
-  CXtot =  -0.02804     Cltot =   0.00000     Cl'tot =   0.00000
-  CYtot =   0.00000     Cmtot =  -0.23430
-  CZtot =  -0.39905     Cntot =   0.00000     Cn'tot =   0.00000
+  CXtot =   0.00006     Cltot =   0.00000     Cl'tot =   0.00000
+  CYtot =   0.00000     Cmtot =  -0.08221
+  CZtot =  -0.00001     Cntot =   0.00000     Cn'tot =   0.00000
 
-  CLtot =   0.40000
-  CDtot =   0.00535
-  CDvis =   0.00000     CDind =   0.00535
-  CLff  =   0.39970     CDff  =   0.00536    | Trefftz
-  CYff  =   0.00000         e =    0.9492    | Plane  
+  CLtot =   0.00000
+  CDtot =  -0.00006
+  CDvis =   0.00000     CDind =  -0.00006
+  CLff  =   0.00001     CDff  =   0.00000    | Trefftz
+  CYff  =   0.00000         e =    0.0000    | Plane  
 
 
  ---------------------------------------------------------------
@@ -34,20 +34,18 @@
 
                              alpha                beta
                   ----------------    ----------------
- z' force CL |    CLa =   5.195406    CLb =   0.000000
- y  force CY |    CYa =   0.000000    CYb =  -0.000406
- x' mom.  Cl'|    Cla =   0.000000    Clb =  -0.009754
- y  mom.  Cm |    Cma =  -2.171071    Cmb =   0.000000
- z' mom.  Cn'|    Cna =   0.000000    Cnb =  -0.001165
+ z' force CL |    CLa =   4.852818    CLb =   0.000000
+ y  force CY |    CYa =   0.000000    CYb =  -0.004884
+ x' mom.  Cl'|    Cla =   0.000000    Clb =  -0.025381
+ y  mom.  Cm |    Cma =  -5.102710    Cmb =   0.000000
+ z' mom.  Cn'|    Cna =   0.000000    Cnb =   0.002779
 
                      roll rate  p'      pitch rate  q'        yaw rate  r'
                   ----------------    ----------------    ----------------
- z' force CL |    CLp =   0.000000    CLq =   9.480753    CLr =   0.000000
- y  force CY |    CYp =   0.054239    CYq =   0.000000    CYr =   0.000646
- x' mom.  Cl'|    Clp =  -0.542763    Clq =   0.000000    Clr =   0.078148
- y  mom.  Cm |    Cmp =   0.000000    Cmq =  -4.747115    Cmr =   0.000000
- z' mom.  Cn'|    Cnp =  -0.032357    Cnq =   0.000000    Cnr =  -0.000797
+ z' force CL |    CLp =   0.000000    CLq =  14.617773    CLr =   0.000000
+ y  force CY |    CYp =  -0.074231    CYq =  -0.000001    CYr =  -0.000860
+ x' mom.  Cl'|    Clp =  -0.500012    Clq =   0.000000    Clr =   0.013917
+ y  mom.  Cm |    Cmp =   0.000000    Cmq = -16.994722    Cmr =   0.000000
+ z' mom.  Cn'|    Cnp =   0.017526    Cnq =   0.000001    Cnr =  -0.000462
 
- Neutral point  Xnp =   0.905414
-
- Clb Cnr / Clr Cnb  =  -0.085425    (  > 1 if spirally stable )
+ Neutral point  Xnp =   0.262736

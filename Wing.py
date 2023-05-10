@@ -15,27 +15,25 @@ from matlab import *
 
 
 class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
-    airfoil_root    = Input("whitcomb.dat")
+    airfoil_root    = Input("whitcomb.dat")      #: :type: string
     airfoil_tip     = Input("simm_airfoil.dat")  #: :type: string
 
-    #w_c_root        = Input(0.5)
-    #w_c_tip         = Input(0.3)
-    wing_surface_area = Input()
-    t_factor_root   = Input(0.1)
+    wing_surface_area = Input()                  # calculated in aircraft.py
+    t_factor_root   = Input(0.1)                 # thickness factor for the airfoil
     t_factor_tip    = Input(0.1)
 
-    w_semi_span     = Input(1.5)
-    sweep           = Input(5)
-    twist           = Input(2)
-    incidence       = Input(3)
+    w_semi_span     = Input(1.5)                 # wing semi span in [m]
+    sweep           = Input(5)                   # sweep angle in deg
+    twist           = Input(2)                   # twist angle in deg
+    incidence       = Input(3)                   # incidence angle in deg
 
-    dynamic_viscosity   = Input(1.8*10**(-5))
-    air_density         = Input(1.225)
-    velocity            = Input(100)
+    dynamic_viscosity   = Input(1.8*10**(-5))    # dynamic viscosity for Reynolds number
+    air_density         = Input(1.225)           # density in [kg/m3]
+    velocity            = Input(100)             # velocity in [km/h]
 
-    cl                  = Input(0.4)
+    cl                  = Input(0.4)             # design lift coefficient [-]
 
-    visc_option         = Input(1) #0 for inviscid, 1 for viscous
+    visc_option         = Input(1)               #0 for inviscid, 1 for viscous
 
 
 
@@ -43,20 +41,20 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
    # def taper_ratio(self):
    #     return(self.w_c_tip/self.w_c_root)
 
-    @Attribute
+    @Attribute      # based on ADSEE I
     def taper_ratio(self):
         return(0.2*(2-self.sweep*pi/180))
 
     @Attribute
-    def w_c_root(self):
+    def w_c_root(self):     # based on ADSEE I
         return(2*self.wing_surface_area/((1+self.taper_ratio)*self.w_semi_span))
 
     @Attribute
-    def w_c_tip(self):
+    def w_c_tip(self):      # based on ADSEE I
         return(self.taper_ratio*self.w_c_root)
 
     @Attribute
-    def mean_aerodynamic_chord(self):
+    def mean_aerodynamic_chord(self):  # based on ADSEE I
         return(2/3)*self.w_c_root*(1+self.taper_ratio+self.taper_ratio**2)/(1+self.taper_ratio)
 
 
@@ -65,12 +63,12 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
         return [self.root_airfoil, self.tip_airfoil]
 
     @Attribute
-    def root_cst(self):
+    def root_cst(self):     # Get root CST values from the included MATLAB script
         root_data = self.root_airfoil.yt_xl_xu
         return MATLAB_Q3D_ENGINE.demo(matlab.double(root_data), nargout=1)
 
     @Attribute
-    def tip_cst(self):
+    def tip_cst(self):       # get tip CST values from the included MATLAB script
         tip_data = self.tip_airfoil.yt_xl_xu
         return MATLAB_Q3D_ENGINE.demo(matlab.double(tip_data), nargout=1)
 
@@ -82,7 +80,7 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
                        mesh_deflection=0.0001)
 
     @Part
-    def tip_airfoil(self):
+    def tip_airfoil(self):      # tip airfoil adjusted for sweep and twist angle
         return Airfoil(airfoil_name=self.airfoil_tip,
                        chord=self.w_c_tip,
                        thickness_factor=self.t_factor_tip,
@@ -93,20 +91,20 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
                        mesh_deflection=0.0001)
 
     @Part
-    def lofted_surf(self):
+    def lofted_surf(self):          # define surface for the wing
         return LoftedSurface(profiles=self.profiles,
                              hidden=not (__name__ == '__main__'))
 
     @Part
-    def lofted_solid(self):
+    def lofted_solid(self):          # define volume for the wing
         return LoftedSolid(profiles=self.profiles,
                            hidden=not (__name__ == '__main__'))
     @Attribute
-    def reynolds_number(self):
+    def reynolds_number(self):      # calculate Reynolds number for the Q3D solver
         return[self.air_density*self.velocity*self.mean_aerodynamic_chord/self.dynamic_viscosity]
 
     @Attribute
-    def wing_area(self):
+    def wing_area(self):            # calculate wing area for Q3D input
         return(0.5*(self.w_c_root+self.w_c_tip)*self.w_semi_span)
 
 
@@ -160,8 +158,6 @@ class Semiwing(LoftedSolid):  # note use of loftedSolid as superclass
                            ])
         incidence = matlab.double([incidence])
 
-        #print(wing_geometry, incidence)
-
         return MATLAB_Q3D_ENGINE.run_q3d(
             wing_geometry,
             matlab.double([incidence]),
@@ -212,6 +208,3 @@ if __name__ == '__main__':
                             )
     display(obj)
 
-    #@Part
-    #def structure(self):
-    #    return Structure()

@@ -430,7 +430,7 @@ class Aircraft(GeomBase):
 
                         position=rotate(translate
                                         (self.position, "x",
-                                          -self.vt_long * self.fuselage.fuselage_length),
+                                          self.fuselage.nose_length-self.vt_long * self.fuselage.fuselage_length),
                                         "x",
                                         radians(self.wing_dihedral + 5)),
                         )
@@ -467,7 +467,7 @@ class Aircraft(GeomBase):
 
                         position=rotate(translate
                                         (self.position,
-                                         "x", -self.vt_long * self.fuselage.fuselage_length,
+                                         "x", self.fuselage.nose_length-self.vt_long * self.fuselage.fuselage_length,
                                          "z", self.fuselage.tail_radius * 0.7),
                                         "x",
                                         radians(90)),
