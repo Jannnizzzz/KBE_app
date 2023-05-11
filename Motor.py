@@ -87,18 +87,6 @@ class Motor(Base):
         return np.ceil(self.max_voltage / self.voltage_per_cell)
 
     @Attribute
-    def gradient_max_voltage(self):
-        characteristics, rpm = self.parent.propeller.prop_characteristics
-        torque = characteristics[:, 6, :]
-        idx = np.unravel_index(np.nanargmax(self.voltages), self.voltages.shape)
-
-        return rpm[idx[1]]/60 - 2 * np.pi * self.resistance * torque[idx[0], idx[1]] / self.k_phi**2
-
-    @Attribute
-    def gradient_current(self):
-        return - 2 * np.pi * self.torque_op / self.k_phi**2
-
-    @Attribute
     def diameter(self):
         return self.motor_data[self.motor_idx, 4]/1000
 

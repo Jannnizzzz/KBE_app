@@ -116,6 +116,7 @@ class Aircraft(GeomBase):
     battery_capacity = Input(1)
     battery_cells = Input(3)
 
+    # endurance requirement translated to flight time
     @Attribute
     def time_requirement(self):
         return self.endurance if self.endurance_mode == 'T' else self.endurance / self.velocity
@@ -130,6 +131,7 @@ class Aircraft(GeomBase):
         split = self.propeller.index('x')
         return int(self.propeller[split + 1:])
 
+    # Validity flag considering the power train
     @Attribute
     def is_valid(self):
         valid = True
@@ -145,15 +147,6 @@ class Aircraft(GeomBase):
         for i in range(self.num_engines):
             motor_weight += self.engines[i].weight
         return 1.5*(self.battery.weight + self.payload.weight + motor_weight)
-
-    # @Attribute  #based on stall speed for small propeller planes according to CS23
-    # def wing_surface_area(self):
-    #     print("Calculate wing area")
-    #     return(self.prelim_weight/(0.5*self.max_cl*self.air_density*(self.stall_speed/3.6)**2))
-
-    # @Attribute
-    # def cl_required(self):
-    #     return 1.1* self.prelim_weight / (self.wing_surface_area * 0.5 * self.air_density * self.velocity ** 2)
 
     @Attribute
     def aspect_ratio(self):
@@ -174,11 +167,13 @@ class Aircraft(GeomBase):
             motor_weight += self.engines[i].weight
         return motor_weight
 
+    # Total weight of the whole drone
     @Attribute
     def total_weight(self):
         return self.battery.weight + self.payload.weight + self.motor_weight + self.wing_weight + self.fuselage_weight
 
-
+    # COG of the drone (currently not considering strucural parts)
+    # it's off, since total weight is used but the lever arm contributions of the structure is not considered.
     @Attribute
     def cog(self):
         cog_x, cog_y, cog_z = 0, 0, 0
@@ -205,6 +200,7 @@ class Aircraft(GeomBase):
         cog_z /= self.total_weight
         return Point(cog_x, cog_y, cog_z)
 
+    # current draw of all engines combined
     @Attribute
     def total_current(self):
         current = 0
@@ -212,14 +208,17 @@ class Aircraft(GeomBase):
             current += self.engines[i].current
         return current
 
+    # Time to be flown given the current performance and the battery capacity
     @Attribute
     def endurance_time(self):
         return self.battery.capacity / self.total_current
 
+    # Distance to be flown given the current performance at the given velocity
     @Attribute
     def endurance_range(self):
         return self.velocity * self.endurance_time
 
+    # Compute number of battery cells to give the minimum maximum rated voltage for all motors
     @Attribute
     def battery_cells_required(self):
         cells = np.NaN
@@ -227,6 +226,7 @@ class Aircraft(GeomBase):
             cells = np.nanmin([cells, self.engines[i].motor.battery_cells_required])
         return cells.astype(int)
 
+    # Load input database of available motors
     @Attribute
     def motor_data(self):
         data = pd.read_excel('Inputs/Motor_data.xlsx')
@@ -234,6 +234,7 @@ class Aircraft(GeomBase):
         data = data[data[:, 1].argsort()]
         return data
 
+    # Drag calculation at design point
     @Attribute
     def drag(self):
         print("Calculate drag")
@@ -257,26 +258,37 @@ class Aircraft(GeomBase):
 
         return drag
 
+    # function to calculate the drag at different velocities
     def variable_drag(self, velocities):
         drags = np.zeros_like(velocities)
-        cLs = np.zeros_like(velocities)
-        cDs = np.zeros_like(velocities)
 
         for i, velocity in enumerate(velocities):
             # wing drag
-            cLs[i] = self.total_weight/(self.wing_surface_area*0.5*self.air_density*(velocity/3.6)**2)
-            cDs[i] = self.right_wing.variable_wing_cd(velocity, cLs[i])
-            drags[i] += self.air_density/2 * (velocity/3.6)**2 * self.wing_surface_area * cDs[i]
+            cL = self.total_weight/(self.wing_surface_area*0.5*self.air_density*(velocity/3.6)**2)
+            cD = self.right_wing.variable_wing_cd(velocity, cL)
+            drags[i] += self.air_density/2 * (velocity/3.6)**2 * self.wing_surface_area * cD
 
-            # TODO: drag of other components
+            # horizontal tail
+            cD_htail = self.tail_right_wing.wing_cd
+            drags[i] += self.air_density / 2 * (velocity / 3.6) ** 2 * self.horizontal_tail_surface_area * cD_htail
 
-        return drags, cLs, cDs
+            # horizontal tail
+            cD_vtail = self.vertical_tail.wing_cd
+            drags[i] += self.air_density / 2 * (velocity / 3.6) ** 2 * self.vertical_tail_surface_area * cD_vtail
 
+            # fuselage
+            drags[i] += self.zero_lift_drag
+
+        return drags
+
+    # Array of y positions of the motors to account for different placement for even or odd number of engines,
+    # clearance between engines and clearance between egines and the fuselage
     @Attribute
     def motor_y_positions(self):
         y_pos = np.zeros((self.num_engines,))
         fuselage_radius = self.fuselage.payload_section_radius
 
+        # case of odd number of engines
         if self.num_engines % 2 == 1:
             middle_index = int((self.num_engines-1)/2)
             y_pos[middle_index] = 0
@@ -288,6 +300,7 @@ class Aircraft(GeomBase):
                     y_pos[middle_index + i] = y_pos[middle_index + i - 1] + 3/2*self.prop_diameter
                     y_pos[middle_index - i] = y_pos[middle_index - i + 1] - 3/2*self.prop_diameter
 
+        # case of even number of engines
         else:
             halve_point = int(self.num_engines/2)
             y_pos[halve_point] = max(fuselage_radius + self.prop_diameter, 3/4*self.prop_diameter)
@@ -435,6 +448,7 @@ class Aircraft(GeomBase):
                                         radians(self.wing_dihedral + 5)),
                         )
 
+    # Left part of the horizontal tail as a mirror of the right part
     @Part
     def tail_left_wing(self):
         return MirroredShape(shape_in=self.tail_right_wing,
@@ -473,14 +487,25 @@ class Aircraft(GeomBase):
                                         radians(90)),
                         )
 
+    # STEP Writer object to export STEP file
     @Part
     def step_writer(self):
         return STEPWriter(trees=[self], filename="Outputs/step_export.stp")
 
+    # Drag of the fuselage
     @Attribute
     def zero_lift_drag(self):
         return self.skin_friction_coefficient * (self.fuselage.fuselage_lofted_surf.area+self.right_wing.area*2+self.tail_right_wing.area*2+self.vertical_tail.area)/self.wing_surface_area
 
+    # Iterate the parameters of the aircraft to generate a converged solution. The following values are explicitly
+    # iterated:
+    # - required cL for the design velocity
+    # - wing area based on stall speed
+    # - motor selection to fit requirements of propeller and therefore thrust required
+    # - batteries capacity based on required endurance
+    # - batteries voltage (number of cells in series) based on maximum rated voltage of motors
+    #
+    # If the iteration result if not valid (in this case only considering the power train), a warning is raised.
     @action
     def iterate(self):
         any_changes = True
@@ -523,6 +548,7 @@ class Aircraft(GeomBase):
             msg = "The iteration result found is not valid."
             generate_warning("Iteration result invalid", msg)
 
+    # Export figure showing the propeller thrust over velocity for different RPMs
     @action
     def create_prop_curve(self):
         characteristics, _ = self.engines[0].propeller.prop_characteristics
@@ -537,6 +563,8 @@ class Aircraft(GeomBase):
         plt.savefig('Outputs/prop_curves.pdf')
         plt.close()
 
+    # Export figure showing the motor characteristics (motor speed over applied torque for maximal voltage)
+    # and propeller requirements (torque for different propeller speeds and velocities)
     @action
     def create_motor_curve(self):
         characteristics, rpm = self.engines[0].propeller.prop_characteristics
@@ -557,15 +585,16 @@ class Aircraft(GeomBase):
                  [self.engines[0].propeller.rpm_op / 60, self.engines[0].propeller.rpm_op / 60, 0], 'k:')
         plt.colorbar(sc, label="Velocity (km/h)")
         plt.xlabel("Motor Torque (Nm)")
-        plt.ylabel("Motor Speed (1/s)")
+        plt.ylabel("Motor Speed, Propeller Speed (1/s)")
         plt.title("Motor Characteristics for max. Voltage\n and Propeller Torque Requirement")
         plt.savefig('Outputs/motor_curves.pdf')
         plt.close()
 
+    # Export figures showing the performance at varying velocities.
     @action
     def velocity_sweep(self):
-        velocities = np.linspace(50, 150, 11)
-        drags, cLs, cDs = self.variable_drag(velocities)
+        velocities = np.linspace(self.stall_speed, 1.5*self.velocity, 11)
+        drags = self.variable_drag(velocities)
         motor_speed, torque, thrust, voltage, current, op_valid = self.engines[0].variable_velocity(velocities, drags/self.num_engines)
 
         fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True, sharey=False)
@@ -581,7 +610,7 @@ class Aircraft(GeomBase):
         ax3.set_ylabel("Current (A)")
         ax3.set_title("")
 
-        ax4.plot(velocities, cDs/cLs)
+        ax4.plot(velocities, drags/self.total_weight)
         ax4.set_ylabel("Aerodynamic Efficiency (-)")
         ax4.set_title("")
 
@@ -589,6 +618,7 @@ class Aircraft(GeomBase):
         plt.savefig('Outputs/velocity_sweep.pdf')
         plt.close(fig)
 
+    # Export some main parameters of the aircraft for future usage as input file.
     @action
     def export_parameters(self):
         columns = ['Value', 'Unit']

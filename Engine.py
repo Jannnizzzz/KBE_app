@@ -20,6 +20,9 @@ class Engine(Base):
     pos_z = Input()
     iteration_history = Input()
 
+    # iterate over the available motors if the current selection is not viable. There are checks in place to avoid
+    # endless forth and back between two motors if it is apparent that neither is viable. It terminates if a solution is
+    # found or none is likely to be found
     @Attribute
     def iterate(self):
         any_changes = False
@@ -64,18 +67,22 @@ class Engine(Base):
     def weight(self):
         return self.motor.weight
 
+    # motor speed at the design point
     @Attribute
     def speed_op(self):
         return self.propeller.rpm_op/60
 
+    # required torque at the design point
     @Attribute
     def torque_op(self):
         return self.propeller.torque_op
 
+    # required current at the design point
     @Attribute
     def current(self):
         return self.motor.current
 
+    # engine operation points for different thrust requirements at different velocities
     def variable_velocity(self, velocity, drag):
         operation_points = np.zeros((velocity.shape[0], 2), dtype=int)
         op_valid = np.zeros_like(velocity, dtype=bool)
